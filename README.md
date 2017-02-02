@@ -1,2 +1,5 @@
-# strategoai-learning
-Python - Using machine learning to learn the game of Stratego
+# strategoai
+
+Python, C - Using machine learning to learn the game of Stratego.
+
+This repo is used for training machine learning models using data collected from the repo strategoai (https://github.com/Benderx/strategoai).
