@@ -102,6 +102,7 @@ class GameEngine:
         self.convert_to_numpy_1D(visibility_temp, self.visible)
 
 
+
     def board_setup(self, results_arr, board_size):
         self.board = numpy.zeros((board_size * board_size,), dtype=numpy.int16)
         self.visible = numpy.zeros((board_size * board_size,), dtype=numpy.int16)
@@ -115,7 +116,6 @@ class GameEngine:
             self.movement[i-2] = results_arr[(i*4)-3]
 
         return (i*4)-2
-
 
 
 
@@ -147,12 +147,9 @@ class GameEngine:
 
 
 
-
-
     # Takes in 2 players and returns 0 for p1 winning and 1 for p2 winning, 2 for tie.
     # Also reveals.
     def battle(self, v1, v2):
-
         if v1 == 0:
             return 1
 
@@ -189,14 +186,6 @@ class GameEngine:
 
         raise Exception('A case that was not thought of happened')
         return False
-
-
-    def extender(self, s):
-        if len(s) == 1:
-            return '00' + s
-        elif len(s) == 2:
-            return '0' + s
-        return s
 
 
     # Takes in coord1 [x1, y1] and coord2 [x2, y2]
@@ -311,88 +300,38 @@ class GameEngine:
         return c_bindings.check_winner(self.board, self.moves, self.owner, self.flags[0], self.flags[1], player)
 
 
-    # Returns representation of the board. Only for db storage atm.
-    # def get_compacted_board_state(self):
-    #     prev = ''
-    #     counter = 1
-    #     whole = []
-    #     board = self.get_2D_array(self.board)
-    #     owner = self.get_2D_array(self.owner)
-    #     visible = self.get_2D_array(self.visible)
-    #     for i in range(len(board)):
-    #         for j in range(len(board[i])):
-    #             val = board[j][i]
-    #             if val != 0 and val != -1:
-    #                 player = owner[j][i]
-    #                 if player == 0:
-    #                     player = 'W'
-    #                 else:
-    #                     player = 'B'
-    #                 v = visible[j][i]
-
-    #             if val == -1:
-    #                 whole.append('L')
-    #             elif val == 12:
-    #                 whole.append('F')
-    #             elif val == 0:
-    #                 whole.append('0')
-    #             else:
-    #                 if v:
-    #                     whole.append(player + 'V' + str(val))
-    #                 else:
-    #                     whole.append(player + str(val))
-    #     return ''.join(whole)
 
 
-    # Returns representation of the board. Only for db storage atm.
-    def get_board_state(self):
-        board = ''
-        visible = ''
-        owner = ''
-        movement = ''
-
-        for i in range(0, self.size * self.size):
-            if self.board[i] == 10: # bomb
-                board += str(-3)
-            elif self.board[i] == 11: # spy
-                board += str(-2)
-            elif self.board[i] == 12: # flag
-                board += str(-1)
-
-            board += str(self.board[i])
-            visible += str(self.visible[i])
-            owner += str(self.owner[i])
-            movement += str(self.movement[i])
-
-        return board, visible, owner, movement
+    # Code for minimax
 
 
-    def move_track(self, coord1, coord2):
-        p1 = self.board[coord1[0]][coord1[1]]
-        self.board[coord1[0]][coord1[1]] = 0
-        if not isinstance(self.board[coord2[0]][coord2[1]], Piece):
-            self.board[coord2[0]][coord2[1]] = p1
-            return p1, 0
+    
+    # def move_track(self, coord1, coord2):
+    #     p1 = self.board[coord1[0]][coord1[1]]
+    #     self.board[coord1[0]][coord1[1]] = 0
+    #     if not isinstance(self.board[coord2[0]][coord2[1]], Piece):
+    #         self.board[coord2[0]][coord2[1]] = p1
+    #         return p1, 0
 
-        p2 = self.board[coord2[0]][coord2[1]]
-        winner = self.battle(p1, p2)
+    #     p2 = self.board[coord2[0]][coord2[1]]
+    #     winner = self.battle(p1, p2)
 
-        if winner == 0:
-            self.board[coord2[0]][coord2[1]] = p1
-        elif winner == 2:
-            self.board[coord2[0]][coord2[1]] = 0
+    #     if winner == 0:
+    #         self.board[coord2[0]][coord2[1]] = p1
+    #     elif winner == 2:
+    #         self.board[coord2[0]][coord2[1]] = 0
 
-        return p1, p2
-
-
-    # Functions for minimax
-    def push_move(self, coord1, coord2):
-        p1, p2 = self.move_track(coord1, coord2)
-        self.move_history.append((coord1, coord2, p1, p2))
+    #     return p1, p2
 
 
-    def pop_move(self):
-        c = self.move_history.pop()
-        self.board[c[0][0]][c[0][1]] = c[2]
-        self.board[c[1][0]][c[1][1]] = c[3]
+    # # Functions for minimax
+    # def push_move(self, coord1, coord2):
+    #     p1, p2 = self.move_track(coord1, coord2)
+    #     self.move_history.append((coord1, coord2, p1, p2))
+
+
+    # def pop_move(self):
+    #     c = self.move_history.pop()
+    #     self.board[c[0][0]][c[0][1]] = c[2]
+    #     self.board[c[1][0]][c[1][1]] = c[3]
 
