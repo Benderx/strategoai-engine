@@ -3,7 +3,6 @@ import random
 import inspect
 import numpy
 from copy import deepcopy
-import c_bindings.engine_commands as c_bindings
 import time
 
 
@@ -34,11 +33,11 @@ class GameEngine:
 
 
     def board_setup(self):
-        self.board = numpy.zeros((n * n,), dtype=numpy.int8)
-        self.owner = numpy.zeros((n * n,), dtype=numpy.int8)
-        self.visible = numpy.zeros((n * n,), dtype=numpy.int8)
+        self.board = numpy.zeros((self.size * self.size,), dtype=numpy.int8)
+        self.owner = numpy.zeros((self.size * self.size,), dtype=numpy.int8)
+        self.visible = numpy.zeros((self.size * self.size,), dtype=numpy.int8)
 
-        owner_temp = self.board = numpy.zeros((n * n,), dtype=numpy.int8)
+        owner_temp = self.board = numpy.zeros((self.size * self.size,), dtype=numpy.int8)
         visibility_temp = [[0 for x in range(0, self.size)] for x in range(0, self.size)]
         board_temp = [[0 for x in range(0, self.size)] for x in range(0, self.size)]
 
@@ -103,19 +102,19 @@ class GameEngine:
 
 
 
-    def board_setup(self, results_arr, board_size):
-        self.board = numpy.zeros((board_size * board_size,), dtype=numpy.int16)
-        self.visible = numpy.zeros((board_size * board_size,), dtype=numpy.int16)
-        self.owner = numpy.zeros((board_size * board_size,), dtype=numpy.int16)
-        self.movement = numpy.zeros((board_size * board_size,), dtype=numpy.int16)
+    # def board_setup(self, results_arr, board_size):
+    #     self.board = numpy.zeros((board_size * board_size,), dtype=numpy.int16)
+    #     self.visible = numpy.zeros((board_size * board_size,), dtype=numpy.int16)
+    #     self.owner = numpy.zeros((board_size * board_size,), dtype=numpy.int16)
+    #     self.movement = numpy.zeros((board_size * board_size,), dtype=numpy.int16)
 
-        for i in range(2, (board_size*board_size)+2):
-            self.board[i-2] = results_arr[(i*4)-6]
-            self.visible[i-2] = results_arr[(i*4)-5]
-            self.owner[i-2] = results_arr[(i*4)-4]
-            self.movement[i-2] = results_arr[(i*4)-3]
+    #     for i in range(2, (board_size*board_size)+2):
+    #         self.board[i-2] = results_arr[(i*4)-6]
+    #         self.visible[i-2] = results_arr[(i*4)-5]
+    #         self.owner[i-2] = results_arr[(i*4)-4]
+    #         self.movement[i-2] = results_arr[(i*4)-3]
 
-        return (i*4)-2
+    #     return (i*4)-2
 
 
 
@@ -305,7 +304,7 @@ class GameEngine:
     # Code for minimax
 
 
-    
+
     # def move_track(self, coord1, coord2):
     #     p1 = self.board[coord1[0]][coord1[1]]
     #     self.board[coord1[0]][coord1[1]] = 0

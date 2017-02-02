@@ -11,7 +11,7 @@ import threading
 import pandas
 
 FIRST_AI = RandomAI.RandomAI #RandomAI, MonteCarloAI, MinimaxAI
-SECOND_AI = MonteCarloAI.MonteCarloAI
+SECOND_AI = RandomAI.RandomAI
 
 
 # humans = 0, 1, 2
@@ -64,10 +64,6 @@ def play_game(engine, humans = 1, db_stuff = None, gui = False, renderer = None,
 def game_start(args):
     engine = g.GameEngine(int(args.size))
     re = None
-    if int(args.track):
-        db_stuff = init_db('games.db', True)
-    else:
-        db_stuff = None
     num_games = int(args.number)
 
 
