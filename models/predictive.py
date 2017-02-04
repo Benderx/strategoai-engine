@@ -28,22 +28,27 @@ def train_model(data, labels):
         h_conv2 = tf.nn.relu(conv2d(h_conv1, W_conv2) + b_conv2)
         # h_pool2 = max_pool_2x2(h_conv2)
 
-    with tf.name_scope('connected_layer'):
+    with tf.name_scope('connected_layer_1'):
         W_fc1 = weight_variable([6*6*64, 1024])
         b_fc1 = bias_variable([1024])
         h_conv2_flat = tf.reshape(h_conv2, [-1, 6*6*64])
         h_fc1 = tf.nn.relu(tf.matmul(h_conv2_flat, W_fc1) + b_fc1)
 
+    with tf.name_scope('connected_layer_2'):
+        W_fc2 = weight_variable([1024, 1024])
+        b_fc2 = bias_variable([1024])
+        h_fc2 = tf.nn.relu(tf.matmul(h_fc1, W_fc2) + b_fc2)
+
     with tf.name_scope('dropout'):
         keep_prob = tf.placeholder(tf.float32)
         tf.summary.scalar('dropout_keep_probability', keep_prob)
-        h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
+        h_fc2_drop = tf.nn.dropout(h_fc2, keep_prob)
 
     with tf.name_scope('readout'):
         W_fc2 = weight_variable([1024, 36])
         b_fc2 = bias_variable([36])
 
-        y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
+        y_conv = tf.matmul(h_fc2_drop, W_fc2) + b_fc2
 
     cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=move_taken))
     train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
@@ -59,7 +64,7 @@ def train_model(data, labels):
         loc = (loc + 50) % samples
         if (i-1) % 100 == 0 or i < 100:
             train_accuracy = accuracy.eval(feed_dict={
-                full_state: board, move_taken: labels, keep_prob: 1.0})
+                full_state: board, move_taken: labels, keep_prob: 1.0}) # checks accuracy on entire dataset, won't scale
             print("step %d, training accuracy %g" % (i, train_accuracy))
 
         train_step.run(feed_dict={full_state: batch, move_taken: batch_labels, keep_prob: 0.5})
