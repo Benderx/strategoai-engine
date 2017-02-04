@@ -1,5 +1,6 @@
 import tensorflow as tf
 import pandas
+from os.path import isfile
 
 CSV_LOCATION = 'games'
 BATCH_SIZE = 50
@@ -49,13 +50,12 @@ def train_model(data, labels):
     sess.run(tf.global_variables_initializer())
 
     samples = len(board)
-    print(len(board))
-    for i in range(5000):
-        loc = 0
+    loc = 0
+    for i in range(50000):
         batch = data[loc:loc+BATCH_SIZE]
         batch_labels = labels[loc:loc+BATCH_SIZE]
         loc = (loc + 50) % samples
-        if (i-1) % 100 == 0:
+        if (i-1) % 100 == 0 or i < 100:
             train_accuracy = accuracy.eval(feed_dict={
                 full_state: batch, move_taken: batch_labels, keep_prob: 1.0})
             print("step %d, training accuracy %g" % (i, train_accuracy))
