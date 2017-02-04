@@ -1,6 +1,7 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 import tensorflow as tf
 import pandas
-from os.path import isfile
 
 CSV_LOCATION = 'games'
 BATCH_SIZE = 50
@@ -8,29 +9,30 @@ BATCH_SIZE = 50
 # for now, just use full board state and predict piece chosen
 def train_model(data, labels):
     sess = tf.InteractiveSession()
+
     with tf.name_scope('input'):
         full_state = tf.placeholder(tf.float32, [None, 36])
         move_taken = tf.placeholder(tf.float32, [None, 36])
         shaped_state = tf.reshape(full_state, [-1, 6, 6, 1])
 
     with tf.name_scope('layer_1'):
-        W_conv1 = weight_variable([3, 3, 1, 32])
+        W_conv1 = weight_variable([4, 4, 1, 32])
         b_conv1 = bias_variable([32])
 
         h_conv1 = tf.nn.relu(conv2d(shaped_state, W_conv1) + b_conv1)
-        h_pool1 = max_pool_2x2(h_conv1)
+        # h_pool1 = max_pool_2x2(h_conv1)
 
     with tf.name_scope('layer_2'):
-        W_conv2 = weight_variable([3, 3, 32, 64])
+        W_conv2 = weight_variable([4, 4, 32, 64])
         b_conv2 = bias_variable([64])
-        h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
-        h_pool2 = max_pool_2x2(h_conv2)
+        h_conv2 = tf.nn.relu(conv2d(h_conv1, W_conv2) + b_conv2)
+        # h_pool2 = max_pool_2x2(h_conv2)
 
     with tf.name_scope('connected_layer'):
-        W_fc1 = weight_variable([256, 1024])
+        W_fc1 = weight_variable([6*6*64, 1024])
         b_fc1 = bias_variable([1024])
-        h_pool2_flat = tf.reshape(h_pool2, [-1, 256])
-        h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+        h_conv2_flat = tf.reshape(h_conv2, [-1, 6*6*64])
+        h_fc1 = tf.nn.relu(tf.matmul(h_conv2_flat, W_fc1) + b_fc1)
 
     with tf.name_scope('dropout'):
         keep_prob = tf.placeholder(tf.float32)
@@ -57,7 +59,7 @@ def train_model(data, labels):
         loc = (loc + 50) % samples
         if (i-1) % 100 == 0 or i < 100:
             train_accuracy = accuracy.eval(feed_dict={
-                full_state: batch, move_taken: batch_labels, keep_prob: 1.0})
+                full_state: board, move_taken: labels, keep_prob: 1.0})
             print("step %d, training accuracy %g" % (i, train_accuracy))
 
         train_step.run(feed_dict={full_state: batch, move_taken: batch_labels, keep_prob: 0.5})
