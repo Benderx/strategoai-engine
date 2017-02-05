@@ -3,7 +3,7 @@ import tensorflow as tf
 
 
 class NeuralAI:
-    def __init__(self, player, engine):
+    def __init__(self, player, engine, *args):
         self.engine = engine
         self.player = player
         self.board = engine.get_board()

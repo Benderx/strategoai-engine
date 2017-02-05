@@ -1,6 +1,7 @@
 import math
 import random
 import graphics
+import time
 
 class Renderer:
 
@@ -33,10 +34,10 @@ class Renderer:
 
                 if board[i][j] == 13 or board[i][j] == 0:
                     if owner[i][j] != 2:
-                        print("lol1")
+                        raise Exception("part of the board is both lake/blank and belongs to someone")
                         continue
                     if visible[i][j] == 1:
-                        print("lol2")
+                        raise Exception("part of the board is both lake/blank and is visible")
                     continue
 
                 c = graphics.Rectangle(graphics.Point(self.box_length * i + self.offset, self.box_length * j + self.offset),
