@@ -64,13 +64,13 @@ def train_move_from(data, labels, iterations):
         batch = data[loc:loc+BATCH_SIZE]
         batch_labels = labels[loc:loc+BATCH_SIZE]
         loc = (loc + 50) % samples
-        if (i-1) % 100 == 0 or i < 100:
+        if (i-1) % 1000 == 0 or i < 10:
             train_accuracy = accuracy.eval(feed_dict={
                 full_state: board, move_taken: labels, keep_prob: 1.0}) # checks accuracy on entire dataset, won't scale
             print("step %d, training accuracy %g" % (i, train_accuracy))
 
         train_step.run(feed_dict={full_state: batch, move_taken: batch_labels, keep_prob: 0.5})
-    tf.train.export_meta_graph(filename='predictive-meta')
+    tf.train.export_meta_graph(filename='move_from-meta')
 
 def train_move_to(data, labels_from, labels_to, iterations):
     sess = tf.InteractiveSession()
@@ -79,7 +79,7 @@ def train_move_to(data, labels_from, labels_to, iterations):
         full_state = tf.placeholder(tf.float32, [None, 36])
         move_to = tf.placeholder(tf.float32, [None, 36])
         move_from = tf.placeholder(tf.float32, [None, 36])
-        shaped_state = tf.reshape(tf.stack([full_state, move_from]), [-1, 6, 6, 2]) # 6x6, 2 channel
+        shaped_state = tf.reshape(tf.stack([full_state, move_from], axis=2), [-1, 6, 6, 2]) # 6x6, 2 channel
 
     with tf.name_scope('layer_1'):
         W_conv1 = weight_variable([4, 4, 2, 32]) # 4x4, 2 channel input, 32 channel output of 6x6es
@@ -123,12 +123,13 @@ def train_move_to(data, labels_from, labels_to, iterations):
         batch_labels_to = labels_to[loc:loc+BATCH_SIZE]
 
         loc = (loc + 50) % samples
-        if (i-1) % 100 == 0 or i < 100:
+        if (i-1) % 1000 == 0 or i < 10:
             train_accuracy = accuracy.eval(feed_dict={
                 full_state: board, move_from: labels_from, move_to: labels_to, keep_prob: 1.0})
             print("step %d, training accuracy %g" % (i, train_accuracy))
 
         train_step.run(feed_dict={full_state: batch, move_from: batch_labels, move_to: batch_labels_to, keep_prob: 0.5})
+    tf.train.export_meta_graph(filename='move_to-meta')
 
 
 
@@ -158,7 +159,7 @@ def import_data():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('model', default='from')
-    parser.add_argument('iterations', default='1000')
+    parser.add_argument('iterations', default='10000')
     args = parser.parse_args()
 
     data = import_data()

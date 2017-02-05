@@ -2,3 +2,5 @@
 \.idea/
 
 models/games
+
+__pycache__/

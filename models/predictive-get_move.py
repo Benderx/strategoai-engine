@@ -5,4 +5,7 @@ import pandas
 
 
 class PredictiveAI:
-    pass
+    def __init__(self):
+
+
+        self.move_from_model =
