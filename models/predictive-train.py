@@ -6,19 +6,20 @@ import argparse
 
 
 CSV_LOCATION = 'games'
-BATCH_SIZE = 50
+BATCH_SIZE = 100
 
 # for now, just use full board state and predict piece chosen
-def train_move_from(data, labels, iterations):
+def train_move_from(data, owner, labels, iterations):
     sess = tf.InteractiveSession()
 
     with tf.name_scope('input'):
-        full_state = tf.placeholder(tf.float32, [None, 36])
-        move_taken = tf.placeholder(tf.float32, [None, 36])
-        shaped_state = tf.reshape(full_state, [-1, 6, 6, 1])
+        board_t = tf.placeholder(tf.float32, [None, 36])
+        owner_t = tf.placeholder(tf.float32, [None, 36])
+        move_taken_t = tf.placeholder(tf.float32, [None, 36])
+        shaped_state = tf.reshape(tf.stack([board_t, owner_t], axis=2), [-1, 6, 6, 2])
 
     with tf.name_scope('layer_1'):
-        W_conv1 = weight_variable([4, 4, 1, 32])
+        W_conv1 = weight_variable([4, 4, 2, 32])
         b_conv1 = bias_variable([32])
 
         h_conv1 = tf.nn.relu(conv2d(shaped_state, W_conv1) + b_conv1)
@@ -36,15 +37,15 @@ def train_move_from(data, labels, iterations):
         h_conv2_flat = tf.reshape(h_conv2, [-1, 6*6*64])
         h_fc1 = tf.nn.relu(tf.matmul(h_conv2_flat, W_fc1) + b_fc1)
 
-    with tf.name_scope('connected_layer_2'):
-        W_fc2 = weight_variable([1024, 1024])
-        b_fc2 = bias_variable([1024])
-        h_fc2 = tf.nn.relu(tf.matmul(h_fc1, W_fc2) + b_fc2)
+    # with tf.name_scope('connected_layer_2'):
+    #     W_fc2 = weight_variable([1024, 1024])
+    #     b_fc2 = bias_variable([1024])
+    #     h_fc2 = tf.nn.relu(tf.matmul(h_fc1, W_fc2) + b_fc2)
 
     with tf.name_scope('dropout'):
         keep_prob = tf.placeholder(tf.float32)
         tf.summary.scalar('dropout_keep_probability', keep_prob)
-        h_fc2_drop = tf.nn.dropout(h_fc2, keep_prob)
+        h_fc2_drop = tf.nn.dropout(h_fc1, keep_prob)
 
     with tf.name_scope('readout'):
         W_fc2 = weight_variable([1024, 36])
@@ -52,37 +53,39 @@ def train_move_from(data, labels, iterations):
 
         y_conv = tf.matmul(h_fc2_drop, W_fc2) + b_fc2
 
-    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=move_taken))
+    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=move_taken_t))
     train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-    correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(move_taken, 1))
+    correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(move_taken_t, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     sess.run(tf.global_variables_initializer())
 
-    samples = len(board)
+    samples = len(data)
     loc = 0
     for i in range(iterations):
         batch = data[loc:loc+BATCH_SIZE]
         batch_labels = labels[loc:loc+BATCH_SIZE]
-        loc = (loc + 50) % samples
+        batch_owner = owner[loc:loc+BATCH_SIZE]
+        loc = (loc + BATCH_SIZE) % samples
         if (i-1) % 1000 == 0 or i < 10:
             train_accuracy = accuracy.eval(feed_dict={
-                full_state: board, move_taken: labels, keep_prob: 1.0}) # checks accuracy on entire dataset, won't scale
+                owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 1.0})
             print("step %d, training accuracy %g" % (i, train_accuracy))
 
-        train_step.run(feed_dict={full_state: batch, move_taken: batch_labels, keep_prob: 0.5})
+        train_step.run(feed_dict={owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 0.5})
     tf.train.export_meta_graph(filename='move_from-meta')
 
-def train_move_to(data, labels_from, labels_to, iterations):
+def train_move_to(data, owner, labels_from, labels_to, iterations):
     sess = tf.InteractiveSession()
 
     with tf.name_scope('input'):
-        full_state = tf.placeholder(tf.float32, [None, 36])
-        move_to = tf.placeholder(tf.float32, [None, 36])
-        move_from = tf.placeholder(tf.float32, [None, 36])
-        shaped_state = tf.reshape(tf.stack([full_state, move_from], axis=2), [-1, 6, 6, 2]) # 6x6, 2 channel
+        full_state_t = tf.placeholder(tf.float32, [None, 36])
+        move_to_t = tf.placeholder(tf.float32, [None, 36])
+        owner_t = tf.placeholder(tf.float32, [None, 36])
+        move_from_t = tf.placeholder(tf.float32, [None, 36])
+        shaped_state = tf.reshape(tf.stack([full_state_t, move_from_t, owner_t], axis=2), [-1, 6, 6, 3]) # 6x6, 3 channel
 
     with tf.name_scope('layer_1'):
-        W_conv1 = weight_variable([4, 4, 2, 32]) # 4x4, 2 channel input, 32 channel output of 6x6es
+        W_conv1 = weight_variable([4, 4, 3, 32]) # 4x4, 3 channel input, 32 channel output of 6x6es
         b_conv1 = bias_variable([32])
 
         h_conv1 = tf.nn.relu(conv2d(shaped_state, W_conv1) + b_conv1)
@@ -109,9 +112,9 @@ def train_move_to(data, labels_from, labels_to, iterations):
 
         y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
 
-    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=move_to))
+    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=move_to_t))
     train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-    correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(move_to, 1))
+    correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(move_to_t, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     sess.run(tf.global_variables_initializer())
 
@@ -121,14 +124,15 @@ def train_move_to(data, labels_from, labels_to, iterations):
         batch = data[loc:loc+BATCH_SIZE]
         batch_labels = labels_from[loc:loc+BATCH_SIZE]
         batch_labels_to = labels_to[loc:loc+BATCH_SIZE]
+        batch_owner = owner[loc:loc+BATCH_SIZE]
 
-        loc = (loc + 50) % samples
+        loc = (loc + BATCH_SIZE) % samples
         if (i-1) % 1000 == 0 or i < 10:
             train_accuracy = accuracy.eval(feed_dict={
-                full_state: board, move_from: labels_from, move_to: labels_to, keep_prob: 1.0})
+                owner_t: batch_owner, full_state_t: batch, move_from_t: batch_labels, move_to_t: batch_labels_to, keep_prob: 1.0})
             print("step %d, training accuracy %g" % (i, train_accuracy))
 
-        train_step.run(feed_dict={full_state: batch, move_from: batch_labels, move_to: batch_labels_to, keep_prob: 0.5})
+        train_step.run(feed_dict={owner_t: batch_owner, full_state_t: batch, move_from_t: batch_labels, move_to_t: batch_labels_to, keep_prob: 0.5})
     tf.train.export_meta_graph(filename='move_to-meta')
 
 
@@ -158,12 +162,13 @@ def import_data():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('model', default='from')
+    parser.add_argument('model')
     parser.add_argument('iterations', default='10000')
     args = parser.parse_args()
 
     data = import_data()
     board = [item for sublist in data[['board']].as_matrix() for item in sublist]
+    owner = [item for sublist in data[['owner']].as_matrix() for item in sublist]
     moves = data[['move_from']]
     labels_from = []
     for move in moves.as_matrix():
@@ -179,6 +184,6 @@ if __name__ == "__main__":
         labels_to.append(temp)
 
     if args.model == 'from':
-        train_move_from(board, labels_from, int(args.iterations))
+        train_move_from(board, owner, labels_from, int(args.iterations))
     if args.model == 'to':
-        train_move_to(board, labels_from, labels_to, int(args.iterations))
+        train_move_to(board, owner, labels_from, labels_to, int(args.iterations))

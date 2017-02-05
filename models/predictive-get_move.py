@@ -6,6 +6,6 @@ import pandas
 
 class PredictiveAI:
     def __init__(self):
-
-
-        self.move_from_model =
+        pass
+        # load metamodels
+        # self.move_from_model =

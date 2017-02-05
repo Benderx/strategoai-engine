@@ -56,7 +56,6 @@ def play_game(engine, humans = 1, db_stuff = None, gui = False, renderer = None,
             renderer.draw_board()
         
         turn = 1 - turn 
-        timing_samples += 1 
     return winner
 
 
