@@ -1,4 +1,4 @@
-import os
+import os, time
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 import tensorflow as tf
 import pandas
@@ -7,6 +7,18 @@ import argparse
 
 CSV_LOCATION = 'games'
 BATCH_SIZE = 100
+
+
+
+def dir_location(name):
+    i = 0
+    while(os.path.isdir(name + '-v' + str(i))):    
+        i += 1
+    new_dir = name + '-v' + str(i)
+    final_path = os.path.abspath(os.getcwd() + '\\' + new_dir)
+    os.mkdir(final_path)
+    return final_path
+
 
 # for now, just use full board state and predict piece chosen
 def train_move_from(data, owner, labels, iterations):
@@ -74,9 +86,12 @@ def train_move_from(data, owner, labels, iterations):
             print("step %d, training accuracy %g" % (i, train_accuracy))
 
         train_step.run(feed_dict={owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 0.5})
+
+    model_name = 'move_from'
     saver = tf.train.Saver()
-    saver.save(sess, os.path.abspath(os.getcwd() + '\\move_from\\move_from'))
-    tf.train.export_meta_graph(filename=os.getcwd() + '\\move_from\\move_from-meta')
+    dir_save = dir_location(model_name)
+    saver.save(sess, dir_save + '\\' + model_name)
+    print('Saved move_to model to:', dir_save)
 
 def train_move_to(data, owner, labels_from, labels_to, iterations):
     sess = tf.InteractiveSession()
@@ -137,9 +152,13 @@ def train_move_to(data, owner, labels_from, labels_to, iterations):
             print("step %d, training accuracy %g" % (i, train_accuracy))
 
         train_step.run(feed_dict={owner_t: batch_owner, full_state_t: batch, move_from_t: batch_labels, move_to_t: batch_labels_to, keep_prob: 0.5})
+
+
+    model_name = 'move_to'
     saver = tf.train.Saver()
-    saver.save(sess, os.path.abspath(os.getcwd() + '\\move_to\\move_to'))
-    tf.train.export_meta_graph(filename=os.getcwd() + '\\move_to\\move_to-meta')
+    dir_save = dir_location(model_name)
+    saver.save(sess, dir_save + '\\' + model_name)
+    print('Saved move_to model to:', dir_save)
 
 
 
