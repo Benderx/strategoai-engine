@@ -13,20 +13,17 @@ FIRST_AI = RandomAI.RandomAI #RandomAI, MonteCarloAI, MinimaxAI
 SECOND_AI = NeuralAI.NeuralAI
 
 
-MODEL_PATH = os.path.abspath(os.getcwd() + '\\models\\v1')
-
-
 # humans = 0, 1, 2
 def play_game(engine, humans = 1, renderer = None, AI1 = None, AI2 = None, search_depth=4):
     engine.board_setup()
 
     players = []
     if humans == 0:
-        players.append(AI1(engine, 0, search_depth, MODEL_PATH))
-        players.append(AI2(engine, 1, search_depth, MODEL_PATH))
+        players.append(AI1(engine, 0, search_depth))
+        players.append(AI2(engine, 1, search_depth))
     elif humans == 1:
         players.append(h.Human(engine, 0, renderer))
-        players.append(AI2(engine, 1, search_depth, MODEL_PATH))
+        players.append(AI2(engine, 1, search_depth))
     elif humans == 2:
         players.append(h.Human(engine, 0, renderer))
         players.append(h.Human(engine, 1, renderer))
