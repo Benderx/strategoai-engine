@@ -1,15 +1,17 @@
 import tensorflow as tf
+import os
 
 class NeuralAI:
-    def __init__(self, engine, player, model_path, *args):
+    def __init__(self, engine, player, search_depth, model_path, *args):
         self.engine = engine
         self.player = player
         self.model_path = model_path
-        self.default_graph = self.load_graph()
+        self.from_graph = self.load_graph('\\move_from-meta')
+        self.to_graph = self.load_graph('\\move_to-meta')
 
 
-    def restore_vars(self):
-        saver.restore(sess, 'results/model.ckpt.data-1000-00000-of-00001')
+    # def restore_vars(self):
+    #     saver.restore(sess, 'results/model.ckpt.data-1000-00000-of-00001')
     
 
     def get_move(self, moves):
@@ -18,29 +20,28 @@ class NeuralAI:
         return moves[c]
 
 
-    def load_graph(frozen_graph_filename):
-    # We load the protobuf file from the disk and parse it to retrieve the
-    # unserialized graph_def
-    with tf.gfile.GFile(frozen_graph_filename, "rb") as f:
-        graph_def = tf.GraphDef()
-        graph_def.ParseFromString(f.read())
+    def load_graph(self, from_path):
+        frozen_graph_filename = os.path.abspath(self.model_path + from_path)
 
-    # Then, we can use again a convenient built-in function to import a graph_def into the
-    # current default Graph
-    with tf.Graph().as_default() as graph:
-        tf.import_graph_def(
-            graph_def,
-            input_map=None,
-            return_elements=None,
-            name="prefix",
-            op_dict=None,
-            producer_op_list=None
-        )
-    return graph
+        # We load the protobuf file from the disk and parse it to retrieve the
+        # unserialized graph_def
+        with tf.gfile.GFile(frozen_graph_filename, "rb") as f:
+            graph_def = tf.GraphDef()
+            graph_def.ParseFromString(f.read())
 
-
-
-
+        # Then, we can use again a convenient built-in function to import a graph_def into the
+        # current default Graph
+        with tf.Graph().as_default() as graph:
+            tf.import_graph_def(
+                graph_def,
+                input_map=None,
+                return_elements=None,
+                name="prefix",
+                op_dict=None,
+                producer_op_list=None
+            )
+        print('loaded')
+        return graph
 
 # Restore
 

@@ -3,16 +3,18 @@ import Renderer as r
 import GameEngine as g
 import Human as h
 import RandomAI
+import NeuralAI
 import time
 import os
 import argparse
 
 FIRST_AI = RandomAI.RandomAI #RandomAI, MonteCarloAI, MinimaxAI
-SECOND_AI = RandomAI.RandomAI
+# SECOND_AI = RandomAI.RandomAI
+SECOND_AI = NeuralAI.NeuralAI
 
-MODEL_PATH = os.path.abspath(os.getcwd() + '\\models\\predictive-meta')
 
-# SECOND_AI = NeuralAI.NeuralAI
+MODEL_PATH = os.path.abspath(os.getcwd() + '\\models\\v1')
+
 
 # humans = 0, 1, 2
 def play_game(engine, humans = 1, renderer = None, AI1 = None, AI2 = None, search_depth=4):
