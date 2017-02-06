@@ -75,7 +75,7 @@ def train_move_from(data, owner, labels, iterations):
 
         train_step.run(feed_dict={owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 0.5})
     saver = tf.train.Saver()
-    saver.save(sess, 'from-weights')
+    saver.save(sess, os.path.abspath(os.getcwd() + 'from-weights'))
     tf.train.export_meta_graph(filename='move_from-meta')
 
 def train_move_to(data, owner, labels_from, labels_to, iterations):
@@ -137,9 +137,9 @@ def train_move_to(data, owner, labels_from, labels_to, iterations):
             print("step %d, training accuracy %g" % (i, train_accuracy))
 
         train_step.run(feed_dict={owner_t: batch_owner, full_state_t: batch, move_from_t: batch_labels, move_to_t: batch_labels_to, keep_prob: 0.5})
-    tf.train.export_meta_graph(filename='move_to-meta')
     saver = tf.train.Saver()
-    saver.save(sess, 'to-weights')
+    saver.save(sess, os.path.abspath(os.getcwd() + 'to-weights'))
+    tf.train.export_meta_graph(filename='move_to-meta')
 
 
 

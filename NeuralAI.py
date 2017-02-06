@@ -40,8 +40,9 @@ class NeuralAI:
                 op_dict=None,
                 producer_op_list=None
             )
-        print('loaded')
+        print('NeuralAI has loaded:', from_path)
         return graph
+
 
 # Restore
 
