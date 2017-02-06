@@ -5,7 +5,7 @@ import random
 ai_type = 0
 
 class RandomAI:
-    def __init__(self, player, engine, *args):
+    def __init__(self, engine, player, *args):
         self.engine = engine
         self.player = player
     
