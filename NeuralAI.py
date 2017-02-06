@@ -1,30 +1,42 @@
 import tensorflow as tf
 
-
-
 class NeuralAI:
-    def __init__(self, player, engine):
+    def __init__(self, engine, player, model_path, *args):
         self.engine = engine
         self.player = player
-        self.board = engine.get_board()
-        self.default_graph = self.get_graph()
-
-
-    def get_graph(self):
-        # Load the VGG-16 model in the default graph
-        saver = tf.train.import_meta_graph('META FILE HERE')
-        # Access the graph
-        graph = tf.get_default_graph()
-        return graph
+        self.model_path = model_path
+        self.default_graph = self.load_graph()
 
 
     def restore_vars(self):
         saver.restore(sess, 'results/model.ckpt.data-1000-00000-of-00001')
     
 
-    def get_move(self, all_moves):
-        c = random.choice(all_moves)
-        return c
+    def get_move(self, moves):
+        number_of_moves = len(moves)
+        c = random.randrange(0, number_of_moves)
+        return moves[c]
+
+
+    def load_graph(frozen_graph_filename):
+    # We load the protobuf file from the disk and parse it to retrieve the
+    # unserialized graph_def
+    with tf.gfile.GFile(frozen_graph_filename, "rb") as f:
+        graph_def = tf.GraphDef()
+        graph_def.ParseFromString(f.read())
+
+    # Then, we can use again a convenient built-in function to import a graph_def into the
+    # current default Graph
+    with tf.Graph().as_default() as graph:
+        tf.import_graph_def(
+            graph_def,
+            input_map=None,
+            return_elements=None,
+            name="prefix",
+            op_dict=None,
+            producer_op_list=None
+        )
+    return graph
 
 
 

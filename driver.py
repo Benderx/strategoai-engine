@@ -4,59 +4,54 @@ import GameEngine as g
 import Human as h
 import RandomAI
 import time
-import sqlite3
 import os
 import argparse
-import threading
-import pandas
 
 FIRST_AI = RandomAI.RandomAI #RandomAI, MonteCarloAI, MinimaxAI
 SECOND_AI = RandomAI.RandomAI
 
+MODEL_PATH = os.path.abspath(os.getcwd() + '\\models\\predictive-meta')
+
+# SECOND_AI = NeuralAI.NeuralAI
 
 # humans = 0, 1, 2
-def play_game(engine, humans = 1, db_stuff = None, gui = False, renderer = None, AI1 = None, AI2 = None):
+def play_game(engine, humans = 1, renderer = None, AI1 = None, AI2 = None, search_depth=4):
     engine.board_setup()
-    tracking = True
-    if db_stuff == None:
-        tracking = False
-    # engine.print_board()
+
     players = []
     if humans == 0:
-        players.append(AI1(0, engine, 4))
-        players.append(AI2(1, engine, 4))
+        players.append(AI1(engine, 0, search_depth, MODEL_PATH))
+        players.append(AI2(engine, 1, search_depth, MODEL_PATH))
     elif humans == 1:
-        players.append(h.Human(engine, 0, gui, renderer))
-        players.append(AI2(1, engine, 4))
+        players.append(h.Human(engine, 0, renderer))
+        players.append(AI2(engine, 1, search_depth, MODEL_PATH))
     elif humans == 2:
-        players.append(h.Human(engine, 0, gui, renderer))
-        players.append(h.Human(engine, 1, gui, renderer))
+        players.append(h.Human(engine, 0, renderer))
+        players.append(h.Human(engine, 1, renderer))
     else:
         raise Exception('This is a two player game, you listed more than 2 humans, or less than 0.')
 
-    if gui:
+    if renderer != None:
         renderer.draw_board()
 
-    state_tracker = []
     turn = 0
     moves_this_game = 0
 
     while True:
-        engine.all_legal_moves(turn)
-
-        winner = engine.check_winner(turn)
-
-        if winner != 0:
+        moves = engine.all_legal_moves(turn)
+        winner = engine.check_winner(turn, moves)
+        if winner != 3:
             break
 
-        move = players[turn].get_move()
-        engine.move(move)
-        
-        if gui:
+        move_choice = players[turn].get_move(moves)
+        engine.move(move_choice)
+
+        if renderer != None:
             renderer.draw_board()
-        
+
+        moves_this_game += 1
         turn = 1 - turn 
-    return winner
+    return winner, moves_this_game
 
 
 
@@ -64,11 +59,18 @@ def game_start(args):
     engine = g.GameEngine(int(args.size))
     re = None
     num_games = int(args.number)
+    num_humans = int(args.humans)
+    board_size = int(args.size)
+    gui = int(args.graphical)
+
+    if gui:
+        re = r.Renderer(engine)
+        re.window_setup(500, 500)
 
 
     for i in range(num_games):
-        winner = play_game(engine, int(args.humans), FIRST_AI, SECOND_AI, int(args.size))
-        print('game ', i, ': ', results[0], ' won in', results[1], 'moves', 'MP_PC:', float(results[1])/time)
+        winner, num_moves = play_game(engine, num_humans, re, FIRST_AI, SECOND_AI, board_size)
+        print('Player', i, 'won in', num_moves, 'moves.')
 
 
 
