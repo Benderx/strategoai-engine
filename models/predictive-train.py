@@ -16,7 +16,9 @@ def train_move_from(data, owner, labels, iterations):
         board_t = tf.placeholder(tf.float32, [None, 36])
         owner_t = tf.placeholder(tf.float32, [None, 36])
         move_taken_t = tf.placeholder(tf.float32, [None, 36])
-        shaped_state = tf.reshape(tf.stack([board_t, owner_t], axis=2), [-1, 6, 6, 2])
+        shaped_board = tf.reshape(board_t, [-1,6,6])
+        shaped_owner = tf.reshape(owner_t, [-1,6,6])
+        shaped_state = tf.stack([shaped_board, shaped_owner], axis=-1)
 
     with tf.name_scope('layer_1'):
         W_conv1 = weight_variable([4, 4, 2, 32])
@@ -72,6 +74,8 @@ def train_move_from(data, owner, labels, iterations):
             print("step %d, training accuracy %g" % (i, train_accuracy))
 
         train_step.run(feed_dict={owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 0.5})
+    saver = tf.train.Saver()
+    saver.save(sess, 'from-weights')
     tf.train.export_meta_graph(filename='move_from-meta')
 
 def train_move_to(data, owner, labels_from, labels_to, iterations):
@@ -134,6 +138,8 @@ def train_move_to(data, owner, labels_from, labels_to, iterations):
 
         train_step.run(feed_dict={owner_t: batch_owner, full_state_t: batch, move_from_t: batch_labels, move_to_t: batch_labels_to, keep_prob: 0.5})
     tf.train.export_meta_graph(filename='move_to-meta')
+    saver = tf.train.Saver()
+    saver.save(sess, 'to-weights')
 
 
 
