@@ -75,8 +75,8 @@ def train_move_from(data, owner, labels, iterations):
 
         train_step.run(feed_dict={owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 0.5})
     saver = tf.train.Saver()
-    saver.save(sess, os.path.abspath(os.getcwd() + 'from-weights'))
-    tf.train.export_meta_graph(filename='move_from-meta')
+    saver.save(sess, os.path.abspath(os.getcwd() + '\\move_from\\move_from'))
+    tf.train.export_meta_graph(filename=os.getcwd() + '\\move_from\\move_from-meta')
 
 def train_move_to(data, owner, labels_from, labels_to, iterations):
     sess = tf.InteractiveSession()
@@ -138,8 +138,8 @@ def train_move_to(data, owner, labels_from, labels_to, iterations):
 
         train_step.run(feed_dict={owner_t: batch_owner, full_state_t: batch, move_from_t: batch_labels, move_to_t: batch_labels_to, keep_prob: 0.5})
     saver = tf.train.Saver()
-    saver.save(sess, os.path.abspath(os.getcwd() + 'to-weights'))
-    tf.train.export_meta_graph(filename='move_to-meta')
+    saver.save(sess, os.path.abspath(os.getcwd() + '\\move_to\\move_to'))
+    tf.train.export_meta_graph(filename=os.getcwd() + '\\move_to\\move_to-meta')
 
 
 
