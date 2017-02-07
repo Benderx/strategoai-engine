@@ -9,12 +9,8 @@ class NeuralAI:
         self.model_path = model_path
 
         self.sess = tf.Session()
-        self.from_graph, saver0, total_path0, model0 = self.load_graph('move_from')
-        self.to_graph, saver1, total_path1, model1 = self.load_graph('move_to')
-        self.sess.run(tf.global_variables_initializer())
-
-        self.load_weights(total_path0, model0, saver0)
-        self.load_weights(total_path1, model1, saver1)
+        self.from_graph = self.load_graph('move_from')
+        self.to_graph = self.load_graph('move_to')
 
 
 
@@ -28,49 +24,48 @@ class NeuralAI:
         return moves[c]
 
 
-    def load_weights(self, total_path, path, saver):
+    def load_weights(self, total_path, model_name):
         dirs = os.listdir(total_path)
         found = False
         for x in dirs:
             if os.path.isfile(os.path.join(total_path, x)):
-                if x[len(path):len(path)+5] == '.data':
+                if x[len(model_name):len(model_name)+5] == '.data':
                     found = True
                     break
 
         if not found:
             raise Exception('Could not find weight file in', total_path)
 
-        print('NeuralAI - Loading weights for:', path)
+        print('NeuralAI - Loading weights for:', model_name)
 
-        coll = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=str(path))
-        print([v.name for v in coll])
+        coll = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=str(model_name))
 
-        with tf.variable_scope(str(path)):
-            saver.restore(self.sess, tf.train.latest_checkpoint(total_path, ))
+        new_saver = tf.train.Saver(coll)
+        new_saver.restore(self.sess, tf.train.latest_checkpoint(total_path, ))
 
-        print('NeuralAI - Loaded weights for:', path)
+        print('NeuralAI - Loaded weights for:', model_name)
 
 
-    def load_graph(self, path):
+    def load_graph(self, model_name):
         curr_dir = os.path.join(os.getcwd(), 'models', 'curr')
         if not os.path.isdir(curr_dir):
             raise Exception('Directory where models should be stored does not exist, please create directory', curr_dir, 'and place model saves in there.')
 
-        total_path = os.path.join(curr_dir, path)
+        total_path = os.path.join(curr_dir, model_name)
         if not os.path.isdir(total_path):
             raise Exception('Directory where', total_path, 'should be stored does not exist, please create directory', total_path, 'and put model there.')
 
-        print('NeuralAI - Loading model:', path)
+        print('NeuralAI - Loading model:', model_name)
 
-
-        meta_file = os.path.join(total_path, path + '.meta')
+        meta_file = os.path.join(total_path, model_name + '.meta')
         saver = tf.train.import_meta_graph(meta_file)
         graph = tf.get_default_graph()
 
+        print('NeuralAI - Loaded model:', model_name)
 
-        print('NeuralAI - Loaded model:', path)
+        self.load_weights(total_path, model_name)
 
-        return graph, saver, total_path, path
+        return graph
 
 
 # Restore
