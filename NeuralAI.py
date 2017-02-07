@@ -37,12 +37,13 @@ class NeuralAI:
         print('NeuralAI - Loading weights for:', path)
 
         print([v.name for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)])
-        exit()
+        
+        print(total_path)
 
         # self.sess = tf.Session()
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
-            saver.restore(sess, total_path + '\\' + 'move_from.index')
+            saver.restore(sess, tf.train.latest_checkpoint(total_path, ))
 
         print('NeuralAI - Loaded weights for:', path)
 
