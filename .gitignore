@@ -4,3 +4,7 @@
 models/games
 
 __pycache__/
+
+models/curr/move_from/
+
+models/curr/move_to/

@@ -2,6 +2,7 @@ import os, time
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 import tensorflow as tf
 import pandas
+import numpy
 import argparse
 from tensorflow.python.framework import graph_util
 
@@ -64,7 +65,7 @@ def freeze_graph(model_folder):
 
 
 # for now, just use full board state and predict piece chosen
-def train_move_from(data, owner, labels, iterations):
+def train_move_from(data, iterations):
     with tf.variable_scope('move_from'):
         with tf.name_scope('input'):
             board_t = tf.placeholder(tf.float32, [None, 36])
@@ -119,7 +120,6 @@ def train_move_from(data, owner, labels, iterations):
         correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(move_taken_t, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-    saver = tf.train.Saver()
 
     # print([v.name for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)])
 
@@ -129,16 +129,18 @@ def train_move_from(data, owner, labels, iterations):
         samples = len(data)
         loc = 0
         for i in range(iterations):
-            batch = data[loc:loc+BATCH_SIZE]
-            batch_labels = labels[loc:loc+BATCH_SIZE]
-            batch_owner = owner[loc:loc+BATCH_SIZE]
+            batch = data.iloc[loc:loc+BATCH_SIZE]
+            batch_board = batch["board"].tolist()
+            batch_labels = batch["move_from"].tolist()
+            batch_owner = batch["owner"].tolist()
             loc = (loc + BATCH_SIZE) % samples
             if (i-1) % 1000 == 0 or i < 10:
                 train_accuracy = accuracy.eval(feed_dict={
-                    owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 1.0})
+                    owner_t: batch_owner, board_t: batch_board, move_taken_t: batch_labels, keep_prob: 1.0})
                 print("step %d, training accuracy %g" % (i, train_accuracy))
 
-            train_step.run(feed_dict={owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 0.5})
+            train_step.run(feed_dict={owner_t: batch_owner, board_t: batch_board, move_taken_t: batch_labels, keep_prob: 0.5})
+        saver = tf.train.Saver()
 
         model_name = 'move_from'
         dir_save = dir_location(model_name)
@@ -248,23 +250,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     data = import_data()
-    board = [item for sublist in data[['board']].as_matrix() for item in sublist]
-    owner = [item for sublist in data[['owner']].as_matrix() for item in sublist]
-    moves = data[['move_from']]
-    labels_from = []
-    for move in moves.as_matrix():
-        temp = [0]*36
-        temp[move[0]] = 1
-        labels_from.append(temp)
-
-    moves_to = data[['move_to']]
-    labels_to = []
-    for move in moves_to.as_matrix():
-        temp = [0]*36
-        temp[move[0]] = 1
-        labels_to.append(temp)
+    # data columns are board, visible, owner, movement, move_from, move_to, board_size
 
     if args.model == 'from':
-        train_move_from(board, owner, labels_from, int(args.iterations))
+        train_move_from(data, int(args.iterations))
     if args.model == 'to':
-        train_move_to(board, owner, labels_from, labels_to, int(args.iterations))
+        train_move_to(data, int(args.iterations))
