@@ -7,7 +7,7 @@ class NeuralAI:
         self.engine = engine
         self.player = player
         self.model_path = model_path
-        self.sess = tf.InteractiveSession()
+        self.sess = None
         self.from_graph = self.load_graph('move_from')
         self.to_graph = self.load_graph('move_to')
 
@@ -28,7 +28,7 @@ class NeuralAI:
         for x in dirs:
             if os.path.isfile(os.path.abspath(total_path + '\\' + x)):
                 if x[len(path):len(path)+5] == '.data':
-                    found =  True
+                    found = True
                     break
 
         if not found:
@@ -36,8 +36,13 @@ class NeuralAI:
 
         print('NeuralAI - Loading weights for:', path)
 
-        print(total_path + '\\' + x)
-        saver.restore(self.sess, total_path + '\\' + x)
+        print([v.name for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)])
+        exit()
+
+        # self.sess = tf.Session()
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            saver.restore(sess, total_path + '\\' + 'move_from.index')
 
         print('NeuralAI - Loaded weights for:', path)
 
@@ -57,6 +62,7 @@ class NeuralAI:
         meta_file = os.path.abspath(total_path + '\\' + path + '.meta')
         saver = tf.train.import_meta_graph(meta_file)
         graph = tf.get_default_graph()
+
 
         print('NeuralAI - Loaded model:', path)
 

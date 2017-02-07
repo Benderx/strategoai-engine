@@ -20,10 +20,14 @@ def dir_location(name):
     return final_path
 
 
+# class move_from_wrapper(object):
+#     def __init__(self, sess):
+#         self.sess = sess
+
+
+
 # for now, just use full board state and predict piece chosen
 def train_move_from(data, owner, labels, iterations):
-    sess = tf.InteractiveSession()
-
     with tf.name_scope('input'):
         board_t = tf.placeholder(tf.float32, [None, 36])
         owner_t = tf.placeholder(tf.float32, [None, 36])
@@ -71,31 +75,35 @@ def train_move_from(data, owner, labels, iterations):
     train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
     correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(move_taken_t, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    sess.run(tf.global_variables_initializer())
 
-    samples = len(data)
-    loc = 0
-    for i in range(iterations):
-        batch = data[loc:loc+BATCH_SIZE]
-        batch_labels = labels[loc:loc+BATCH_SIZE]
-        batch_owner = owner[loc:loc+BATCH_SIZE]
-        loc = (loc + BATCH_SIZE) % samples
-        if (i-1) % 1000 == 0 or i < 10:
-            train_accuracy = accuracy.eval(feed_dict={
-                owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 1.0})
-            print("step %d, training accuracy %g" % (i, train_accuracy))
-
-        train_step.run(feed_dict={owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 0.5})
-
-    model_name = 'move_from'
     saver = tf.train.Saver()
-    dir_save = dir_location(model_name)
-    saver.save(sess, dir_save + '\\' + model_name)
-    print('Saved move_to model to:', dir_save)
+
+    print([v.name for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)])
+    exit()
+    
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+
+        samples = len(data)
+        loc = 0
+        for i in range(iterations):
+            batch = data[loc:loc+BATCH_SIZE]
+            batch_labels = labels[loc:loc+BATCH_SIZE]
+            batch_owner = owner[loc:loc+BATCH_SIZE]
+            loc = (loc + BATCH_SIZE) % samples
+            if (i-1) % 1000 == 0 or i < 10:
+                train_accuracy = accuracy.eval(feed_dict={
+                    owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 1.0})
+                print("step %d, training accuracy %g" % (i, train_accuracy))
+
+            train_step.run(feed_dict={owner_t: batch_owner, board_t: batch, move_taken_t: batch_labels, keep_prob: 0.5})
+
+        model_name = 'move_from'
+        dir_save = dir_location(model_name)
+        saver.save(sess, dir_save + '\\' + model_name)
+        print('Saved move_to model to:', dir_save)
 
 def train_move_to(data, owner, labels_from, labels_to, iterations):
-    sess = tf.InteractiveSession()
-
     with tf.name_scope('input'):
         full_state_t = tf.placeholder(tf.float32, [None, 36])
         move_to_t = tf.placeholder(tf.float32, [None, 36])
@@ -135,30 +143,33 @@ def train_move_to(data, owner, labels_from, labels_to, iterations):
     train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
     correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(move_to_t, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    sess.run(tf.global_variables_initializer())
 
-    samples = len(board)
-    loc = 0
-    for i in range(iterations):
-        batch = data[loc:loc+BATCH_SIZE]
-        batch_labels = labels_from[loc:loc+BATCH_SIZE]
-        batch_labels_to = labels_to[loc:loc+BATCH_SIZE]
-        batch_owner = owner[loc:loc+BATCH_SIZE]
-
-        loc = (loc + BATCH_SIZE) % samples
-        if (i-1) % 1000 == 0 or i < 10:
-            train_accuracy = accuracy.eval(feed_dict={
-                owner_t: batch_owner, full_state_t: batch, move_from_t: batch_labels, move_to_t: batch_labels_to, keep_prob: 1.0})
-            print("step %d, training accuracy %g" % (i, train_accuracy))
-
-        train_step.run(feed_dict={owner_t: batch_owner, full_state_t: batch, move_from_t: batch_labels, move_to_t: batch_labels_to, keep_prob: 0.5})
-
-
-    model_name = 'move_to'
     saver = tf.train.Saver()
-    dir_save = dir_location(model_name)
-    saver.save(sess, dir_save + '\\' + model_name)
-    print('Saved move_to model to:', dir_save)
+    
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+
+        samples = len(board)
+        loc = 0
+        for i in range(iterations):
+            batch = data[loc:loc+BATCH_SIZE]
+            batch_labels = labels_from[loc:loc+BATCH_SIZE]
+            batch_labels_to = labels_to[loc:loc+BATCH_SIZE]
+            batch_owner = owner[loc:loc+BATCH_SIZE]
+
+            loc = (loc + BATCH_SIZE) % samples
+            if (i-1) % 1000 == 0 or i < 10:
+                train_accuracy = accuracy.eval(feed_dict={
+                    owner_t: batch_owner, full_state_t: batch, move_from_t: batch_labels, move_to_t: batch_labels_to, keep_prob: 1.0})
+                print("step %d, training accuracy %g" % (i, train_accuracy))
+
+            train_step.run(feed_dict={owner_t: batch_owner, full_state_t: batch, move_from_t: batch_labels, move_to_t: batch_labels_to, keep_prob: 0.5})
+
+
+        model_name = 'move_to'
+        dir_save = dir_location(model_name)
+        saver.save(sess, dir_save + '\\' + model_name)
+        print('Saved move_to model to:', dir_save)
 
 
 
