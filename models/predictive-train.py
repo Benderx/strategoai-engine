@@ -12,10 +12,10 @@ BATCH_SIZE = 100
 
 def dir_location(name):
     i = 0
-    while(os.path.isdir(os.path.join('curr', name + '-v' + str(i)))):
+    while(os.path.isdir(os.path.abspath(name + '-v' + str(i)))):
         i += 1
     new_dir = name + '-v' + str(i)
-    final_path = os.path.join(os.getcwd(),'curr', new_dir)
+    final_path = os.path.join(os.getcwd(), new_dir)
     os.mkdir(final_path)
     return final_path
 
@@ -104,7 +104,7 @@ def train_move_from(data, owner, labels, iterations):
 
         model_name = 'move_from'
         dir_save = dir_location(model_name)
-        saver.save(sess, dir_save + '\\' + model_name)
+        saver.save(sess, os.path.join(dir_save, model_name))
         print('Saved move_to model to:', dir_save)
 
 def train_move_to(data, owner, labels_from, labels_to, iterations):
@@ -172,7 +172,7 @@ def train_move_to(data, owner, labels_from, labels_to, iterations):
 
         model_name = 'move_to'
         dir_save = dir_location(model_name)
-        saver.save(sess, dir_save + '\\' + model_name)
+        saver.save(sess, os.path.join(dir_save, model_name))
         print('Saved move_to model to:', dir_save)
 
 

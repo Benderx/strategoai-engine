@@ -26,7 +26,7 @@ class NeuralAI:
         dirs = os.listdir(total_path)
         found = False
         for x in dirs:
-            if os.path.isfile(os.path.abspath(total_path + '\\' + x)):
+            if os.path.isfile(os.path.join(total_path, x)):
                 if x[len(path):len(path)+5] == '.data':
                     found = True
                     break
@@ -48,18 +48,18 @@ class NeuralAI:
 
 
     def load_graph(self, path):
-        curr_dir = os.path.abspath(os.getcwd() + '\\models' + '\\curr')
+        curr_dir = os.path.join(os.getcwd(), 'models', 'curr')
         if not os.path.isdir(curr_dir):
             raise Exception('Directory where models should be stored does not exist, please create directory', curr_dir, 'and place model saves in there.')
 
-        total_path = os.path.abspath(curr_dir + '\\' + path)
+        total_path = os.path.join(curr_dir, path)
         if not os.path.isdir(total_path):
             raise Exception('Directory where', total_path, 'should be stored does not exist, please create directory', total_path, 'and put model there.')
 
         print('NeuralAI - Loading model:', path)
 
 
-        meta_file = os.path.abspath(total_path + '\\' + path + '.meta')
+        meta_file = os.path.join(total_path, path + '.meta')
         saver = tf.train.import_meta_graph(meta_file)
         graph = tf.get_default_graph()
 
