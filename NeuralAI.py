@@ -1,7 +1,7 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
+import os
 import random
+import pandas
 
 class NeuralAI:
     def __init__(self, engine, player, search_depth, model_path=None, *args):
@@ -20,8 +20,8 @@ class NeuralAI:
     
 
     def get_move(self, moves):
-        # all_vars = [n.name for n in tf.get_default_graph().as_graph_def().node]
-        all_vars2 = [v for v in tf.all_variables()]
+        all_vars = [n for n in tf.get_default_graph().as_graph_def().node]
+        # all_vars2 = [v for v in tf.all_variables()]
         op = self.from_graph.get_operations()
         # print([m.values().name for m in op])
         # print([c.name for c in tf.get_collection(tf.GraphKeys.VARIABLES, scope=str('move_from/readout'))])
@@ -38,13 +38,39 @@ class NeuralAI:
         #     v_ = self.sess.run(v)
         #     print(v_)
 
-        cross = None
-        for o in op:
-            if o.name == 'move_from/SoftmaxCrossEntropyWithLogits':
-                print(o.name)
-                corss = o
 
-        o.run(feed_dict={owner_t: self.engine.owner, board_t: self.engine.board, keep_prob: 0})
+
+
+
+        board_place = None
+        owner_place = None
+        keep_prob_place = None
+        move_taken_place = None
+
+        board_place = tf.get_default_graph().get_tensor_by_name("move_from/input/Placeholder:0")
+        owner_place = tf.get_default_graph().get_tensor_by_name("move_from/input/Placeholder_1:0")
+        keep_prob_place = tf.get_default_graph().get_tensor_by_name("move_from/dropout/Placeholder:0")
+        move_taken_place = tf.get_default_graph().get_tensor_by_name("move_from/input/Placeholder_2:0")
+
+
+        y_conv = None
+        y_conv = tf.get_default_graph().get_tensor_by_name("move_from/readout/add:0")
+
+
+        # cross = None
+        # for o in op:
+        #     if o.name == '':
+        #         cross = o.values()[0]
+
+        # print(cross)
+        # print(owner_place)
+        # print(board_place)
+        # print(keep_prob_place)
+        # print(move_taken_place)
+
+        result = y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], move_taken_place: [self.engine.board], keep_prob_place: 1.0}, session = self.sess)
+
+        print(result)
 
         number_of_moves = len(moves)
         c = random.randrange(0, number_of_moves)
