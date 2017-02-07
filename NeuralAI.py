@@ -21,7 +21,7 @@ class NeuralAI:
     def get_move(self, moves):
         # all_vars = [n.name for n in tf.get_default_graph().as_graph_def().node]
         all_vars2 = [v for v in tf.all_variables()]
-        # op = self.from_graph.get_operations()
+        op = self.from_graph.get_operations()
         # print([m.values().name for m in op])
         # print([c.name for c in tf.get_collection(tf.GraphKeys.VARIABLES, scope=str('move_from/readout'))])
         
@@ -32,12 +32,18 @@ class NeuralAI:
         # last_layer_var = [v for v in tf.all_variables() if v.name == "move_from/readout/add"][0]
         # all_vars = tf.get_collection('vars')
         # print(all_vars)
-        for v in all_vars2:
-            print(v.name)
-            v_ = self.sess.run(v)
-            print(v_)
+        # for v in all_vars2:
+        #     print(v.name)
+        #     v_ = self.sess.run(v)
+        #     print(v_)
 
-        WHAT_PUT_HERE.run(feed_dict={owner_t: self.engine.owner, board_t: self.engine.board, keep_prob: 0})
+        cross = None
+        for o in op:
+            if o.name == 'move_from/SoftmaxCrossEntropyWithLogits':
+                print(o.name)
+                corss = o
+
+        o.run(feed_dict={owner_t: self.engine.owner, board_t: self.engine.board, keep_prob: 0})
 
         number_of_moves = len(moves)
         c = random.randrange(0, number_of_moves)
