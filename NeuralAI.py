@@ -7,9 +7,15 @@ class NeuralAI:
         self.engine = engine
         self.player = player
         self.model_path = model_path
-        self.sess = None
-        self.from_graph = self.load_graph('move_from')
-        self.to_graph = self.load_graph('move_to')
+
+        self.sess = tf.Session()
+        self.from_graph, saver0, total_path0, model0 = self.load_graph('move_from')
+        self.to_graph, saver1, total_path1, model1 = self.load_graph('move_to')
+        self.sess.run(tf.global_variables_initializer())
+
+        self.load_weights(total_path0, model0, saver0)
+        self.load_weights(total_path1, model1, saver1)
+
 
 
     # def restore_vars(self):
@@ -36,14 +42,11 @@ class NeuralAI:
 
         print('NeuralAI - Loading weights for:', path)
 
-        print([v.name for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)])
-        
-        print(total_path)
+        coll = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=str(path))
+        print([v.name for v in coll])
 
-        # self.sess = tf.Session()
-        with tf.Session() as sess:
-            sess.run(tf.global_variables_initializer())
-            saver.restore(sess, tf.train.latest_checkpoint(total_path, ))
+        with tf.variable_scope(str(path)):
+            saver.restore(self.sess, tf.train.latest_checkpoint(total_path, ))
 
         print('NeuralAI - Loaded weights for:', path)
 
@@ -67,8 +70,7 @@ class NeuralAI:
 
         print('NeuralAI - Loaded model:', path)
 
-        self.load_weights(total_path, path, saver)
-        return graph
+        return graph, saver, total_path, path
 
 
 # Restore
