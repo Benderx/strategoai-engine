@@ -20,7 +20,7 @@ class NeuralAI:
 
     def get_move(self, moves):
         # all_vars = [n.name for n in tf.get_default_graph().as_graph_def().node]
-        all_vars2 = [v.name for v in tf.all_variables()]
+        all_vars2 = [v for v in tf.all_variables()]
         # op = self.from_graph.get_operations()
         # print([m.values().name for m in op])
         # print([c.name for c in tf.get_collection(tf.GraphKeys.VARIABLES, scope=str('move_from/readout'))])
@@ -33,6 +33,7 @@ class NeuralAI:
         # all_vars = tf.get_collection('vars')
         # print(all_vars)
         for v in all_vars2:
+            print(v.name)
             v_ = self.sess.run(v)
             print(v_)
 
