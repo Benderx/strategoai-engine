@@ -37,6 +37,8 @@ class NeuralAI:
             v_ = self.sess.run(v)
             print(v_)
 
+        WHAT_PUT_HERE.run(feed_dict={owner_t: self.engine.owner, board_t: self.engine.board, keep_prob: 0})
+
         number_of_moves = len(moves)
         c = random.randrange(0, number_of_moves)
         return moves[c]
