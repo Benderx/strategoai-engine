@@ -7,6 +7,7 @@ class NeuralAI:
         self.engine = engine
         self.player = player
         self.model_path = model_path
+        self.sess = tf.InteractiveSession()
         self.from_graph = self.load_graph('move_from')
         self.to_graph = self.load_graph('move_to')
 
@@ -21,20 +22,23 @@ class NeuralAI:
         return moves[c]
 
 
-    def load_weights(self, total_path, path):
+    def load_weights(self, total_path, path, saver):
         dirs = os.listdir(total_path)
-        print(dirs)
+        found = False
         for x in dirs:
-            if os.path.isfile(x):
-                print(x[len(path):len(path)+4])
-                if x[len(path):len(path)+4] == '.data':
-                    print('lmao')
-                    exit()
+            if os.path.isfile(os.path.abspath(total_path + '\\' + x)):
+                if x[len(path):len(path)+5] == '.data':
+                    found =  True
+                    break
 
+        if not found:
+            raise Exception('Could not find weight file in', total_path)
 
         print('NeuralAI - Loading weights for:', path)
-        with tf.Session as sess:
-            saver.restore(sess, 'results/model.ckpt.data-1000-00000-of-00001')
+
+        print(total_path + '\\' + x)
+        saver.restore(self.sess, total_path + '\\' + x)
+
         print('NeuralAI - Loaded weights for:', path)
 
 
@@ -56,7 +60,7 @@ class NeuralAI:
 
         print('NeuralAI - Loaded model:', path)
 
-        self.load_weights(total_path, path)
+        self.load_weights(total_path, path, saver)
         return graph
 
 
