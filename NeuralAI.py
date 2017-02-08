@@ -52,18 +52,18 @@ class NeuralAI:
         result_copy.sort(reverse=True)
 
         for i in result_copy:
-            move = result.index(i)
-            if move in possible_move_from:
+            move_from_net = result.index(i)
+            if move_from_net in possible_move_from:
                 break
 
-        print('net 1 done:', move)
+        print('net 1 done:', move_from_net)
 
         possible_move_to = []
         for i in moves:
             f = i[0]
             t = i[1]
             total = (f[0]-1) + (f[1]-1)*6
-            if total == move:
+            if total == move_from_net:
                 possible_move_to.append((t[0]-1) + (t[1]-1)*6)
 
         # print(self.engine.board[move])
@@ -87,12 +87,33 @@ class NeuralAI:
         y_conv = tf.get_default_graph().get_tensor_by_name("move_to/readout/add:0")
 
         # EVAL MOVE_TO()
-        result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], move_from_place: self.one_hot(move), keep_prob_place: 1.0}, session = self.sess)[0])
+        result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], move_from_place: [self.one_hot(move_from_net)], keep_prob_place: 1.0}, session = self.sess)[0])
+
+        result_copy = copy.deepcopy(result)
+        result_copy.sort(reverse=True)
+
+        for i in result_copy:
+            move_to_net = result.index(i)
+            if move_to_net in possible_move_to:
+                break
+
+        print('net 2 done:',move_to_net)
 
 
-        number_of_moves = len(moves)
-        c = random.randrange(0, number_of_moves)
-        return moves[c]
+        move_from_net_2d = [0, 0]
+        move_to_net_2d = [0, 0]
+
+        move_from_net_2d[0] = (move_from_net % 6) + 1
+        move_from_net_2d[1] = int(move_from_net / 6) + 1
+        move_to_net_2d[0] = (move_to_net % 6) + 1
+        move_to_net_2d[1] = int(move_to_net / 6) + 1
+
+        return (tuple(move_from_net_2d), tuple(move_to_net_2d))
+
+
+        # number_of_moves = len(moves)
+        # c = random.randrange(0, number_of_moves)
+        # return moves[c]
 
 
     def load_weights(self, total_path, model_name):
