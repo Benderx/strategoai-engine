@@ -1,6 +1,7 @@
 import tensorflow as tf
 import os
 import random
+import numpy
 import pandas
 import math
 import copy
@@ -16,15 +17,13 @@ class NeuralAI:
         self.to_graph = self.load_graph('move_to')
 
 
+    def one_hot(self, val):
+        temp = numpy.zeros(36, dtype = "int16")
+        temp[val] = 1
+        return temp
 
-    # def restore_vars(self):
-    #     saver.restore(sess, 'results/model.ckpt.data-1000-00000-of-00001')
-    
 
     def get_move(self, moves):
-        # all_vars = [n for n in tf.get_default_graph().as_graph_def().node]
-        # op = self.from_graph.get_operations()
-
         possible_move_from = []
         for i in moves:
             f = i[0]
@@ -38,17 +37,16 @@ class NeuralAI:
         keep_prob_place = None
         move_from_place = None
 
-        board_place = tf.get_default_graph().get_tensor_by_name("move_from/input/Placeholder:0")
-        owner_place = tf.get_default_graph().get_tensor_by_name("move_from/input/Placeholder_1:0")
-        keep_prob_place = tf.get_default_graph().get_tensor_by_name("move_from/dropout/Placeholder:0")
-        move_from_place = tf.get_default_graph().get_tensor_by_name("move_from/input/Placeholder_2:0")
-
+        board_place = tf.get_default_graph().get_tensor_by_name("move_from/input/board_t:0")
+        owner_place = tf.get_default_graph().get_tensor_by_name("move_from/input/owner_t:0")
+        # move_from_place = tf.get_default_graph().get_tensor_by_name("move_from/input/move_from_one_hot_t:0")
+        keep_prob_place = tf.get_default_graph().get_tensor_by_name("move_from/dropout/keep_prob_t:0")
 
         y_conv = None
         y_conv = tf.get_default_graph().get_tensor_by_name("move_from/readout/add:0")
 
         # EVAKL MOVE_FROM()
-        result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], move_from_place: [0]*36, keep_prob_place: 1.0}, session = self.sess)[0])
+        result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], keep_prob_place: 1.0}, session = self.sess)[0])
 
         result_copy = list(copy.deepcopy(result))
         result_copy.sort(reverse=True)
@@ -57,6 +55,16 @@ class NeuralAI:
             move = result.index(i)
             if move in possible_move_from:
                 break
+
+        print('net 1 done:', move)
+
+        possible_move_to = []
+        for i in moves:
+            f = i[0]
+            t = i[1]
+            total = (f[0]-1) + (f[1]-1)*6
+            if total == move:
+                possible_move_to.append((t[0]-1) + (t[1]-1)*6)
 
         # print(self.engine.board[move])
 
@@ -68,18 +76,18 @@ class NeuralAI:
         move_to_place = None
         move_from_place = None
 
-        board_place = tf.get_default_graph().get_tensor_by_name("move_to/input/Placeholder:0")
-        owner_place = tf.get_default_graph().get_tensor_by_name("move_to/input/Placeholder_1:0")
-        move_from_place = tf.get_default_graph().get_tensor_by_name("move_to/input/Placeholder_2:0")
-        move_to_place = tf.get_default_graph().get_tensor_by_name("move_to/input/Placeholder_3:0")
-        keep_prob_place = tf.get_default_graph().get_tensor_by_name("move_to/dropout/Placeholder:0")
+        board_place = tf.get_default_graph().get_tensor_by_name("move_to/input/board_t:0")
+        owner_place = tf.get_default_graph().get_tensor_by_name("move_to/input/owner_t:0")
+        move_from_place = tf.get_default_graph().get_tensor_by_name("move_to/input/move_from_one_hot_t:0")
+        # move_to_place = tf.get_default_graph().get_tensor_by_name("move_to/input/move_to_one_hot_t:0")
+        keep_prob_place = tf.get_default_graph().get_tensor_by_name("move_to/dropout/keep_prob_t:0")
 
 
         y_conv = None
         y_conv = tf.get_default_graph().get_tensor_by_name("move_to/readout/add:0")
 
         # EVAL MOVE_TO()
-        result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], move_from_place: move, move_to_place: [0] * 36, keep_prob_place: 1.0}, session = self.sess)[0])
+        result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], move_from_place: self.one_hot(move), keep_prob_place: 1.0}, session = self.sess)[0])
 
 
         number_of_moves = len(moves)
