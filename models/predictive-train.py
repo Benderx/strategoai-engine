@@ -67,9 +67,9 @@ def freeze_graph(model_folder):
 def train_move_from(board, owner, move_from_one_hot, iterations):
     with tf.variable_scope('move_from'):
         with tf.name_scope('input'):
-            board_t = tf.placeholder(tf.float32, [None, 36])
-            owner_t = tf.placeholder(tf.float32, [None, 36])
-            move_from_one_hot_t = tf.placeholder(tf.float32, [None, 36])
+            board_t = tf.placeholder(tf.float32, [None, 36], name='board_t')
+            owner_t = tf.placeholder(tf.float32, [None, 36], name='owner_t')
+            move_from_one_hot_t = tf.placeholder(tf.float32, [None, 36], name='move_from_one_hot_t')
             shaped_board = tf.reshape(board_t, [-1,6,6])
             shaped_owner = tf.reshape(owner_t, [-1,6,6])
             shaped_state = tf.stack([shaped_board, shaped_owner], axis=-1)
@@ -104,7 +104,7 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
             h_fc3 = tf.nn.relu(tf.matmul(h_fc2, W_fc3) + b_fc3)
 
         with tf.name_scope('dropout'):
-            keep_prob = tf.placeholder(tf.float32)
+            keep_prob = tf.placeholder(tf.float32, name='keep_prob_t')
             tf.summary.scalar('dropout_keep_probability', keep_prob)
             h_fc2_drop = tf.nn.dropout(h_fc3, keep_prob)
 
@@ -124,7 +124,7 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-
+        print(board_t)
         samples = len(data)
         loc = 0
         for i in range(iterations):
@@ -148,13 +148,13 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
 
         print('Saved move_to model to:', dir_save)
 
-def train_move_to(board, owner, move_from, move_to_one_hot, iterations):
+def train_move_to(board, owner, move_from_one_hot, move_to_one_hot, iterations):
     with tf.variable_scope('move_to'):
         with tf.name_scope('input'):
-            board_t = tf.placeholder(tf.float32, [None, 36])
-            owner_t = tf.placeholder(tf.float32, [None, 36])
-            move_from_t = tf.placeholder(tf.float32, [None])
-            move_to_one_hot_t = tf.placeholder(tf.float32, [None, 36])
+            board_t = tf.placeholder(tf.float32, [None, 36], name='board_t')
+            owner_t = tf.placeholder(tf.float32, [None, 36], name='owner_t')
+            move_from_one_hot_t = tf.placeholder(tf.float32, [None, 36], name='move_from_one_hot_t')
+            move_to_one_hot_t = tf.placeholder(tf.float32, [None, 36], name='move_to_one_hot_t')
 
             shaped_board = tf.reshape(board_t, [-1,6,6])
             shaped_owner = tf.reshape(owner_t, [-1,6,6])
@@ -178,7 +178,7 @@ def train_move_to(board, owner, move_from, move_to_one_hot, iterations):
             h_fc1 = tf.nn.relu(tf.matmul(h_conv2_flat, W_fc1) + b_fc1)
 
         with tf.name_scope('dropout'):
-            keep_prob = tf.placeholder(tf.float32)
+            keep_prob = tf.placeholder(tf.float32, name='keep_prob_t')
             tf.summary.scalar('dropout_keep_probability', keep_prob)
             h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
@@ -203,7 +203,7 @@ def train_move_to(board, owner, move_from, move_to_one_hot, iterations):
         for i in range(iterations):
             batch_board = board[loc:loc+BATCH_SIZE]
             batch_owner = owner[loc:loc+BATCH_SIZE]
-            batch_move_from = move_from[loc:loc+BATCH_SIZE]
+            batch_move_from_one_hot = move_from_one_hot[loc:loc+BATCH_SIZE]
             batch_move_to_one_hot = move_to_one_hot[loc:loc+BATCH_SIZE]
 
             # print(batch_board)
@@ -212,10 +212,10 @@ def train_move_to(board, owner, move_from, move_to_one_hot, iterations):
             loc = (loc + BATCH_SIZE) % samples
             if (i-1) % 1000 == 0 or i < 10:
                 train_accuracy = accuracy.eval(feed_dict={
-                    board_t: batch_board, owner_t: batch_owner, move_from_t: batch_move_from, move_to_one_hot_t: batch_move_to_one_hot, keep_prob: 1.0})
+                    board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, move_to_one_hot_t: batch_move_to_one_hot, keep_prob: 1.0})
                 print("step %d, training accuracy %g" % (i, train_accuracy))
 
-            train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_t: batch_move_from, move_to_one_hot_t: batch_move_to_one_hot, keep_prob: 0.5})
+            train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, move_to_one_hot_t: batch_move_to_one_hot, keep_prob: 0.5})
 
 
         model_name = 'move_to'
@@ -260,4 +260,4 @@ if __name__ == "__main__":
     if args.model == 'from':
         train_move_from(data['board'].tolist(), data['owner'].tolist(), data['move_from_one_hot'].tolist(), int(args.iterations))
     if args.model == 'to':
-        train_move_to(data['board'].tolist(), data['owner'].tolist(), data['move_from'].tolist(), data['move_to_one_hot'].tolist(), int(args.iterations))
+        train_move_to(data['board'].tolist(), data['owner'].tolist(), data['move_from_one_hot'].tolist(), data['move_to_one_hot'].tolist(), int(args.iterations))
