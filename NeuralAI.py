@@ -2,6 +2,8 @@ import tensorflow as tf
 import os
 import random
 import pandas
+import math
+import copy
 
 class NeuralAI:
     def __init__(self, engine, player, search_depth, model_path=None, *args):
@@ -20,57 +22,65 @@ class NeuralAI:
     
 
     def get_move(self, moves):
-        all_vars = [n for n in tf.get_default_graph().as_graph_def().node]
-        # all_vars2 = [v for v in tf.all_variables()]
-        op = self.from_graph.get_operations()
-        # print([m.values().name for m in op])
-        # print([c.name for c in tf.get_collection(tf.GraphKeys.VARIABLES, scope=str('move_from/readout'))])
-        
-        # for x in all_vars:
-        #     # print(x[0:17])
-        #     if x[0:17] == 'move_from/readout':
-        #         print(x)
-        # last_layer_var = [v for v in tf.all_variables() if v.name == "move_from/readout/add"][0]
-        # all_vars = tf.get_collection('vars')
-        # print(all_vars)
-        # for v in all_vars2:
-        #     print(v.name)
-        #     v_ = self.sess.run(v)
-        #     print(v_)
+        # all_vars = [n for n in tf.get_default_graph().as_graph_def().node]
+        # op = self.from_graph.get_operations()
 
+        possible_move_from = []
+        for i in moves:
+            f = i[0]
+            total = (f[0]-1) + (f[1]-1)*6
+            possible_move_from.append(total)
 
-
-
+        # PULLING MOVE_FROM TENSORS
 
         board_place = None
         owner_place = None
         keep_prob_place = None
-        move_taken_place = None
+        move_from_place = None
 
         board_place = tf.get_default_graph().get_tensor_by_name("move_from/input/Placeholder:0")
         owner_place = tf.get_default_graph().get_tensor_by_name("move_from/input/Placeholder_1:0")
         keep_prob_place = tf.get_default_graph().get_tensor_by_name("move_from/dropout/Placeholder:0")
-        move_taken_place = tf.get_default_graph().get_tensor_by_name("move_from/input/Placeholder_2:0")
+        move_from_place = tf.get_default_graph().get_tensor_by_name("move_from/input/Placeholder_2:0")
 
 
         y_conv = None
         y_conv = tf.get_default_graph().get_tensor_by_name("move_from/readout/add:0")
 
+        # EVAKL MOVE_FROM()
+        result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], move_from_place: [0]*36, keep_prob_place: 1.0}, session = self.sess)[0])
 
-        # cross = None
-        # for o in op:
-        #     if o.name == '':
-        #         cross = o.values()[0]
+        result_copy = list(copy.deepcopy(result))
+        result_copy.sort(reverse=True)
 
-        # print(cross)
-        # print(owner_place)
-        # print(board_place)
-        # print(keep_prob_place)
-        # print(move_taken_place)
+        for i in result_copy:
+            move = result.index(i)
+            if move in possible_move_from:
+                break
 
-        result = y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], move_taken_place: [self.engine.board], keep_prob_place: 1.0}, session = self.sess)
+        # print(self.engine.board[move])
 
-        print(result)
+        # PULLING MOVE_TO TENSORS
+
+        board_place = None
+        owner_place = None
+        keep_prob_place = None
+        move_to_place = None
+        move_from_place = None
+
+        board_place = tf.get_default_graph().get_tensor_by_name("move_to/input/Placeholder:0")
+        owner_place = tf.get_default_graph().get_tensor_by_name("move_to/input/Placeholder_1:0")
+        move_from_place = tf.get_default_graph().get_tensor_by_name("move_to/input/Placeholder_2:0")
+        move_to_place = tf.get_default_graph().get_tensor_by_name("move_to/input/Placeholder_3:0")
+        keep_prob_place = tf.get_default_graph().get_tensor_by_name("move_to/dropout/Placeholder:0")
+
+
+        y_conv = None
+        y_conv = tf.get_default_graph().get_tensor_by_name("move_to/readout/add:0")
+
+        # EVAL MOVE_TO()
+        result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], move_from_place: move, move_to_place: [0] * 36, keep_prob_place: 1.0}, session = self.sess)[0])
+
 
         number_of_moves = len(moves)
         c = random.randrange(0, number_of_moves)
