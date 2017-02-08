@@ -197,42 +197,33 @@ def train_move_to(board, owner, move_from_one_hot, move_to_one_hot, iterations):
 
         train_samples = int(len(board) * .9)
         test_samples = len(board) - train_samples
-        print(test_samples)
-        loc = 0
-        test_loc = 0
+
+        print('train samples avaliable:', train_samples)
+        print('TRAIN_BATCH_SIZE:', TRAIN_BATCH_SIZE)
+        print('test samples avaliable:', test_samples)
+        print('TEST_BATCH_SIZE:', TEST_BATCH_SIZE)
+
+        train_loc = 0
+        test_loc = train_samples
 
         for i in range(iterations):
-            loc_end = loc+BATCH_SIZE
-            if loc_end > train_samples:
-                loc_end = train_samples
+            batch_board = next_batch(board, train_loc, TRAIN_BATCH_SIZE, train_samples, 0)
+            batch_owner = next_batch(owner, train_loc, TRAIN_BATCH_SIZE, train_samples, 0)
+            batch_move_from_one_hot = next_batch(move_from_one_hot, train_loc, TRAIN_BATCH_SIZE, train_samples, 0)
+            batch_move_to_one_hot = next_batch(move_to_one_hot, train_loc, TRAIN_BATCH_SIZE, train_samples, 0)
 
-            batch_board = board[loc:loc_end]
-            batch_owner = owner[loc:loc_end]
-            batch_move_from_one_hot = move_from_one_hot[loc:loc_end]
-            batch_move_to_one_hot = move_to_one_hot[loc:loc_end]
-
-            loc = (loc + BATCH_SIZE) % train_samples
-
+            train_loc = iter_batch(train_loc, TRAIN_BATCH_SIZE, train_samples, 0)
             if (i-1) % 1000 == 0 or i < 10:
                 accuracy_train = accuracy.eval(feed_dict={
                     board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, move_to_one_hot_t: batch_move_to_one_hot, keep_prob: 1.0})
                 print("step %d, accuracy on training set %g" % (i, accuracy_train))
 
-                # test_begin = test_loc
-                # test_end = test_loc + TEST_BATCH_SIZE
+                test_board = next_batch(board, test_loc, TEST_BATCH_SIZE, test_samples, train_samples)
+                test_owner = next_batch(owner, test_loc, TEST_BATCH_SIZE, test_samples, train_samples)
+                test_move_from_one_hot = next_batch(move_from_one_hot, test_loc, TEST_BATCH_SIZE, test_samples, train_samples)
+                test_move_to_one_hot = next_batch(move_to_one_hot, test_loc, TEST_BATCH_SIZE, test_samples, train_samples)
 
-                # test_loc = (test_loc + TEST_BATCH_SIZE) % test_samples
-
-                # test_begin += train_samples
-                # test_end += train_samples
-
-                test_begin = train_samples
-                test_end = train_samples + TEST_BATCH_SIZE
-
-                test_board = board[test_beign:test_end]
-                test_owner = owner[test_begin:test_end]
-                test_move_from_one_hot = move_from_one_hot[test_beign:test_end]
-                test_move_to_one_hot = move_to_one_hot[test_begin:test_end]
+                test_loc = iter_batch(test_loc, TEST_BATCH_SIZE, test_samples, train_samples)
 
                 accuracy_test = accuracy.eval(feed_dict={
                     board_t: test_board, owner_t: test_owner, move_from_one_hot_t: test_move_from_one_hot, move_to_one_hot_t: test_move_to_one_hot, keep_prob: 1.0})
