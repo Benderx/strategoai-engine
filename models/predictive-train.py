@@ -8,7 +8,7 @@ from tensorflow.python.framework import graph_util
 
 
 CSV_LOCATION = 'games'
-BATCH_SIZE = 100
+TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 5000
 
 
@@ -23,45 +23,21 @@ def dir_location(name):
     return final_path
 
 
-def freeze_graph(model_folder):
-    # We retrieve our checkpoint fullpath
-    checkpoint = tf.train.get_checkpoint_state(model_folder)
-    input_checkpoint = checkpoint.model_checkpoint_path
+def next_batch(data, loc, batch_size, max_samples, start_batch):
+    end = loc+batch_size
+    if end > (max_samples + start_batch):
+        end = (max_samples + start_batch)
 
-    # We precise the file fullname of our freezed graph
-    absolute_model_folder = "/".join(input_checkpoint.split('/')[:-1])
-    output_graph = absolute_model_folder + "/frozen_model.pb"
+    print('batch:', loc, end)
+    return data[loc:end]
 
-    # Before exporting our graph, we need to precise what is our output node
-    # This is how TF decides what part of the Graph he has to keep and what part it can dump
-    # NOTE: this variable is plural, because you can have multiple output nodes
-    output_node_names = "Accuracy/predictions"
 
-    # We clear devices to allow TensorFlow to control on which device it will load operations
-    clear_devices = True
-
-    # We import the meta graph and retrieve a Saver
-    saver = tf.train.import_meta_graph(input_checkpoint + '.meta', clear_devices=clear_devices)
-
-    # We retrieve the protobuf graph definition
-    graph = tf.get_default_graph()
-    input_graph_def = graph.as_graph_def()
-
-    # We start a session and restore the graph weights
-    with tf.Session() as sess:
-        saver.restore(sess, input_checkpoint)
-
-        # We use a built-in TF helper to export variables to constants
-        output_graph_def = graph_util.convert_variables_to_constants(
-            sess,  # The session is used to retrieve the weights
-            input_graph_def,  # The graph_def is used to retrieve the nodes
-            output_node_names.split(",")  # The output node names are used to select the usefull nodes
-        )
-
-        # Finally we serialize and dump the output graph to the filesystem
-        with tf.gfile.GFile(output_graph, "wb") as f:
-            f.write(output_graph_def.SerializeToString())
-        print("%d ops in the final graph." % len(output_graph_def.node))
+def iter_batch(loc, batch_size, max_samples, start_batch):
+    new_loc = loc + batch_size
+    if new_loc > max_samples:
+        new_loc = start_batch
+    
+    return new_loc
 
 
 # for now, just use full board state and predict piece chosen
@@ -125,41 +101,43 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
+        # sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
         train_samples = int(len(board) * .9)
         test_samples = len(board) - train_samples
-        loc = 0
-        test_loc = 0
+
+        print('train samples avaliable:', train_samples)
+        print('TRAIN_BATCH_SIZE:', TRAIN_BATCH_SIZE)
+        print('test samples avaliable:', test_samples)
+        print('TEST_BATCH_SIZE:', TEST_BATCH_SIZE)
+
+        train_loc = 0
+        test_loc = train_samples
         for i in range(iterations):
-            loc_end = loc+BATCH_SIZE
-            if loc_end > train_samples:
-                loc_end = train_samples
 
-            batch_board = board[loc:loc_end]
-            batch_owner = owner[loc:loc_end]
-            batch_move_from_one_hot = move_from_one_hot[loc:loc_end]
+            batch_board = next_batch(board, train_loc, TRAIN_BATCH_SIZE, train_samples, 0)
+            batch_owner = next_batch(owner, train_loc, TRAIN_BATCH_SIZE, train_samples, 0)
+            batch_move_from_one_hot = next_batch(move_from_one_hot, train_loc, TRAIN_BATCH_SIZE, train_samples, 0)
 
-            loc = (loc + BATCH_SIZE) % train_samples
+            train_loc = iter_batch(train_loc, TRAIN_BATCH_SIZE, train_samples, 0)
+
             if (i-1) % 1000 == 0 or i < 10:
                 accuracy_train = accuracy.eval(feed_dict={
                     board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, keep_prob: 1.0})
                 print("step %d, accuracy on training set %g" % (i, accuracy_train))
 
-                test_begin = test_loc
-                test_end = test_loc + TEST_BATCH_SIZE
+                test_board = next_batch(board, test_loc, TEST_BATCH_SIZE, test_samples, train_samples)
+                test_owner = next_batch(owner, test_loc, TEST_BATCH_SIZE, test_samples, train_samples)
+                test_move_from_one_hot = next_batch(move_from_one_hot, test_loc, TEST_BATCH_SIZE, test_samples, train_samples)
 
-                test_loc = (test_loc + TEST_BATCH_SIZE) % test_samples
-
-                test_begin += train_samples
-                test_end += train_samples
-
-                test_board = board[test_begin:test_end]
-                test_owner = owner[test_begin:test_end]
-                test_move_from_one_hot = move_from_one_hot[test_begin:test_end]
+                test_loc = iter_batch(test_loc, TEST_BATCH_SIZE, test_samples, train_samples)
 
                 accuracy_test = accuracy.eval(feed_dict={
                     board_t: test_board, owner_t: test_owner, move_from_one_hot_t: test_move_from_one_hot, keep_prob: 1.0})
                 print("step %d, accuracy on test set %g" % (i, accuracy_test))
+
+                if i == 3:
+                    exit()
 
             train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, keep_prob: 0.5})
         saver = tf.train.Saver()
@@ -223,6 +201,7 @@ def train_move_to(board, owner, move_from_one_hot, move_to_one_hot, iterations):
 
         train_samples = int(len(board) * .9)
         test_samples = len(board) - train_samples
+        print(test_samples)
         loc = 0
         test_loc = 0
 
@@ -243,13 +222,16 @@ def train_move_to(board, owner, move_from_one_hot, move_to_one_hot, iterations):
                     board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, move_to_one_hot_t: batch_move_to_one_hot, keep_prob: 1.0})
                 print("step %d, accuracy on training set %g" % (i, accuracy_train))
 
-                test_begin = test_loc
-                test_end = test_loc + TEST_BATCH_SIZE
+                # test_begin = test_loc
+                # test_end = test_loc + TEST_BATCH_SIZE
 
-                test_loc = (test_loc + TEST_BATCH_SIZE) % test_samples
+                # test_loc = (test_loc + TEST_BATCH_SIZE) % test_samples
 
-                test_begin += train_samples
-                test_end += train_samples
+                # test_begin += train_samples
+                # test_end += train_samples
+
+                test_begin = train_samples
+                test_end = train_samples + TEST_BATCH_SIZE
 
                 test_board = board[test_beign:test_end]
                 test_owner = owner[test_begin:test_end]
