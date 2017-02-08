@@ -149,13 +149,13 @@ def train_move_from(data, iterations):
 
         print('Saved move_to model to:', dir_save)
 
-def train_move_to(board, owner, move_from, label_move_to, iterations):
+def train_move_to(board, owner, move_from, move_to_one_hot, iterations):
     with tf.variable_scope('move_to'):
         with tf.name_scope('input'):
             board_t = tf.placeholder(tf.float32, [None, 36])
             owner_t = tf.placeholder(tf.float32, [None, 36])
             move_from_t = tf.placeholder(tf.float32, [None])
-            move_to_t = tf.placeholder(tf.float32, [None])
+            move_to_one_hot_t = tf.placeholder(tf.float32, [None, 36])
 
             shaped_board = tf.reshape(board_t, [-1,6,6])
             shaped_owner = tf.reshape(owner_t, [-1,6,6])
@@ -189,9 +189,9 @@ def train_move_to(board, owner, move_from, label_move_to, iterations):
 
             y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
 
-        cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=move_to_t))
+        cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=move_to_one_hot_t))
         train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-        correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(move_to_t, 1))
+        correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(move_to_one_hot_t, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     saver = tf.train.Saver()
@@ -205,7 +205,7 @@ def train_move_to(board, owner, move_from, label_move_to, iterations):
             batch_board = board[loc:loc+BATCH_SIZE]
             batch_owner = owner[loc:loc+BATCH_SIZE]
             batch_move_from = move_from[loc:loc+BATCH_SIZE]
-            batch_label_move_to = label_move_to[loc:loc+BATCH_SIZE]
+            batch_move_to_one_hot = move_to_one_hot[loc:loc+BATCH_SIZE]
 
             # print(batch_board)
             # exit()
@@ -213,10 +213,10 @@ def train_move_to(board, owner, move_from, label_move_to, iterations):
             loc = (loc + BATCH_SIZE) % samples
             if (i-1) % 1000 == 0 or i < 10:
                 train_accuracy = accuracy.eval(feed_dict={
-                    board_t: batch_board, owner_t: batch_owner, move_from_t: batch_move_from, move_to_t: batch_label_move_to, keep_prob: 1.0})
+                    board_t: batch_board, owner_t: batch_owner, move_from_t: batch_move_from, move_to_one_hot_t: batch_move_to_one_hot, keep_prob: 1.0})
                 print("step %d, training accuracy %g" % (i, train_accuracy))
 
-            train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_t: batch_move_from, move_to_t: batch_label_move_to, keep_prob: 0.5})
+            train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_t: batch_move_from, move_to_one_hot_t: batch_move_to_one_hot, keep_prob: 0.5})
 
 
         model_name = 'move_to'
@@ -261,4 +261,4 @@ if __name__ == "__main__":
     if args.model == 'from':
         train_move_from(data, int(args.iterations))
     if args.model == 'to':
-        train_move_to(data['board'].tolist(), data['owner'].tolist(), data['move_from'].tolist(), data['move_to'].tolist(), int(args.iterations))
+        train_move_to(data['board'].tolist(), data['owner'].tolist(), data['move_from'].tolist(), data['move_to_one_hot'].tolist(), int(args.iterations))
