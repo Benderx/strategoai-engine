@@ -154,8 +154,9 @@ def train_move_to(board, owner, move_from, label_move_to, iterations):
         with tf.name_scope('input'):
             board_t = tf.placeholder(tf.float32, [None, 36])
             owner_t = tf.placeholder(tf.float32, [None, 36])
-            move_from_t = tf.placeholder(tf.float32, [None, 36])
-            move_to_t = tf.placeholder(tf.float32, [None, 36])
+            move_from_t = tf.placeholder(tf.float32, [None])
+            move_to_t = tf.placeholder(tf.float32, [None])
+
             shaped_board = tf.reshape(board_t, [-1,6,6])
             shaped_owner = tf.reshape(owner_t, [-1,6,6])
             shaped_state = tf.stack([shaped_board, shaped_owner], axis=-1)
@@ -186,10 +187,7 @@ def train_move_to(board, owner, move_from, label_move_to, iterations):
             W_fc2 = weight_variable([1024, 36])
             b_fc2 = bias_variable([36])
 
-            print(h_fc1_drop)
-            print(W_fc2)
-            print(b_fc2)
-            y_conv = tf.Variable(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
+            y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
 
         cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=move_to_t))
         train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
@@ -208,6 +206,9 @@ def train_move_to(board, owner, move_from, label_move_to, iterations):
             batch_owner = owner[loc:loc+BATCH_SIZE]
             batch_move_from = move_from[loc:loc+BATCH_SIZE]
             batch_label_move_to = label_move_to[loc:loc+BATCH_SIZE]
+
+            # print(batch_board)
+            # exit()
 
             loc = (loc + BATCH_SIZE) % samples
             if (i-1) % 1000 == 0 or i < 10:
@@ -260,4 +261,4 @@ if __name__ == "__main__":
     if args.model == 'from':
         train_move_from(data, int(args.iterations))
     if args.model == 'to':
-        train_move_to(data.board, data.owner, data.move_from, data.move_to, int(args.iterations))
+        train_move_to(data['board'].tolist(), data['owner'].tolist(), data['move_from'].tolist(), data['move_to'].tolist(), int(args.iterations))
