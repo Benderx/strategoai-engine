@@ -9,6 +9,7 @@ from tensorflow.python.framework import graph_util
 
 CSV_LOCATION = 'games'
 BATCH_SIZE = 100
+TEST_BATCH_SIZE = 5000
 
 
 
@@ -124,19 +125,41 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        print(board_t)
-        samples = len(data)
-        loc = 0
-        for i in range(iterations):
-            batch_board = board[loc:loc+BATCH_SIZE]
-            batch_owner = owner[loc:loc+BATCH_SIZE]
-            batch_move_from_one_hot = move_from_one_hot[loc:loc+BATCH_SIZE]
 
-            loc = (loc + BATCH_SIZE) % samples
+        train_samples = int(len(board) * .9)
+        test_samples = len(board) - train_samples
+        loc = 0
+        test_loc = 0
+        for i in range(iterations):
+            loc_end = loc+BATCH_SIZE
+            if loc_end > train_samples:
+                loc_end = train_samples
+
+            batch_board = board[loc:loc_end]
+            batch_owner = owner[loc:loc_end]
+            batch_move_from_one_hot = move_from_one_hot[loc:loc_end]
+
+            loc = (loc + BATCH_SIZE) % train_samples
             if (i-1) % 1000 == 0 or i < 10:
-                train_accuracy = accuracy.eval(feed_dict={
+                accuracy_train = accuracy.eval(feed_dict={
                     board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, keep_prob: 1.0})
-                print("step %d, training accuracy %g" % (i, train_accuracy))
+                print("step %d, accuracy on training set %g" % (i, accuracy_train))
+
+                test_begin = test_loc
+                test_end = test_loc + TEST_BATCH_SIZE
+
+                test_loc = (test_loc + TEST_BATCH_SIZE) % test_samples
+
+                test_begin += train_samples
+                test_end += train_samples
+
+                test_board = board[test_begin:test_end]
+                test_owner = owner[test_begin:test_end]
+                test_move_from_one_hot = move_from_one_hot[test_begin:test_end]
+
+                accuracy_test = accuracy.eval(feed_dict={
+                    board_t: test_board, owner_t: test_owner, move_from_one_hot_t: test_move_from_one_hot, keep_prob: 1.0})
+                print("step %d, accuracy on test set %g" % (i, accuracy_test))
 
             train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, keep_prob: 0.5})
         saver = tf.train.Saver()
@@ -198,22 +221,44 @@ def train_move_to(board, owner, move_from_one_hot, move_to_one_hot, iterations):
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
-        samples = len(board)
+        train_samples = int(len(board) * .9)
+        test_samples = len(board) - train_samples
         loc = 0
+        test_loc = 0
+
         for i in range(iterations):
-            batch_board = board[loc:loc+BATCH_SIZE]
-            batch_owner = owner[loc:loc+BATCH_SIZE]
-            batch_move_from_one_hot = move_from_one_hot[loc:loc+BATCH_SIZE]
-            batch_move_to_one_hot = move_to_one_hot[loc:loc+BATCH_SIZE]
+            loc_end = loc+BATCH_SIZE
+            if loc_end > train_samples:
+                loc_end = train_samples
 
-            # print(batch_board)
-            # exit()
+            batch_board = board[loc:loc_end]
+            batch_owner = owner[loc:loc_end]
+            batch_move_from_one_hot = move_from_one_hot[loc:loc_end]
+            batch_move_to_one_hot = move_to_one_hot[loc:loc_end]
 
-            loc = (loc + BATCH_SIZE) % samples
+            loc = (loc + BATCH_SIZE) % train_samples
+
             if (i-1) % 1000 == 0 or i < 10:
-                train_accuracy = accuracy.eval(feed_dict={
+                accuracy_train = accuracy.eval(feed_dict={
                     board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, move_to_one_hot_t: batch_move_to_one_hot, keep_prob: 1.0})
-                print("step %d, training accuracy %g" % (i, train_accuracy))
+                print("step %d, accuracy on training set %g" % (i, accuracy_train))
+
+                test_begin = test_loc
+                test_end = test_loc + TEST_BATCH_SIZE
+
+                test_loc = (test_loc + TEST_BATCH_SIZE) % test_samples
+
+                test_begin += train_samples
+                test_end += train_samples
+
+                test_board = board[test_beign:test_end]
+                test_owner = owner[test_begin:test_end]
+                test_move_from_one_hot = move_from_one_hot[test_beign:test_end]
+                test_move_to_one_hot = move_to_one_hot[test_begin:test_end]
+
+                accuracy_test = accuracy.eval(feed_dict={
+                    board_t: test_board, owner_t: test_owner, move_from_one_hot_t: test_move_from_one_hot, move_to_one_hot_t: test_move_to_one_hot, keep_prob: 1.0})
+                print("step %d, accuracy on test set %g" % (i, accuracy_test))
 
             train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, move_to_one_hot_t: batch_move_to_one_hot, keep_prob: 0.5})
 
