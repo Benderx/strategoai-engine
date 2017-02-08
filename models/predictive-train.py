@@ -28,7 +28,6 @@ def next_batch(data, loc, batch_size, max_samples, start_batch):
     if end > (max_samples + start_batch):
         end = (max_samples + start_batch)
 
-    print('batch:', loc, end)
     return data[loc:end]
 
 
@@ -135,9 +134,6 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
                 accuracy_test = accuracy.eval(feed_dict={
                     board_t: test_board, owner_t: test_owner, move_from_one_hot_t: test_move_from_one_hot, keep_prob: 1.0})
                 print("step %d, accuracy on test set %g" % (i, accuracy_test))
-
-                if i == 3:
-                    exit()
 
             train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, keep_prob: 0.5})
         saver = tf.train.Saver()
