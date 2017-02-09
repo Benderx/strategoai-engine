@@ -2,7 +2,7 @@ import os, time
 os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
 import tensorflow as tf
 import pandas
-import numpy
+import numpy as np
 import argparse
 from tensorflow.python.framework import graph_util
 import math
@@ -12,6 +12,14 @@ CSV_LOCATION = 'games'
 TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 5000
 
+
+def shuffle(df, n=1, axis=0):     
+    print("Shuffling data")
+    df = df.copy()
+    for _ in range(n):
+        df.apply(np.random.shuffle, axis=axis)
+    print("Done shuffling")
+    return df
 
 
 def dir_location(name):
@@ -35,6 +43,8 @@ def next_batch(data, loc, batch_size, max_samples, start_batch):
 def iter_batch(loc, batch_size, max_samples, start_batch):
     new_loc = loc + batch_size
     if new_loc > max_samples:
+        if start_batch == 0:
+            print("looping training set")
         new_loc = start_batch
     
     return new_loc
@@ -102,7 +112,7 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+        # sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
         train_samples = int(len(board) * .9)
         test_samples = len(board) - train_samples
@@ -138,6 +148,8 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
                 print("step %d, accuracy on test set %g" % (i, accuracy_test))
 
             train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, keep_prob: 0.5})
+
+        print('Finished training, saving model.')
 
         model_name = 'move_from'
         dir_save = dir_location(model_name)
@@ -232,6 +244,7 @@ def train_move_to(board, owner, move_from_one_hot, move_to_one_hot, iterations):
 
             train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, move_to_one_hot_t: batch_move_to_one_hot, keep_prob: 0.5})
 
+        print('Finished training, saving model.')
 
         model_name = 'move_to'
         dir_save = dir_location(model_name)
@@ -270,9 +283,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     data = import_data()
-    # data columns are board, visible, owner, movement, move_from, move_to, board_size
+
+    shuffle(data)
+
+    # data columns are board, visible, owner, movement, move_from, move_to, board_size, move_from_one_hot, move_to_one_hot
+    board = data['board'].tolist()
+    owner = data['owner'].tolist()
+    move_from = data['move_from'].tolist()
+    move_from_one_hot = data['move_from_one_hot'].tolist()
+    move_to = data['move_to'].tolist()
+    move_to_one_hot = data['move_to_one_hot'].tolist()
+
+
 
     if args.model == 'from':
-        train_move_from(data['board'].tolist(), data['owner'].tolist(), data['move_from_one_hot'].tolist(), int(args.iterations))
+        train_move_from(board, owner, move_from_one_hot, int(args.iterations))
     if args.model == 'to':
-        train_move_to(data['board'].tolist(), data['owner'].tolist(), data['move_from_one_hot'].tolist(), data['move_to_one_hot'].tolist(), int(args.iterations))
+        train_move_to(board, owner, move_from_one_hot, move_to_one_hot, int(args.iterations))
