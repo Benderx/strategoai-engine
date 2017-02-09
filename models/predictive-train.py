@@ -5,6 +5,7 @@ import pandas
 import numpy
 import argparse
 from tensorflow.python.framework import graph_util
+import math
 
 
 CSV_LOCATION = 'games'
@@ -95,12 +96,13 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
         correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(move_from_one_hot_t, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
+    saver = tf.train.Saver()
 
     # print([v.name for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)])
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        # sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+        sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
         train_samples = int(len(board) * .9)
         test_samples = len(board) - train_samples
@@ -136,7 +138,6 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
                 print("step %d, accuracy on test set %g" % (i, accuracy_test))
 
             train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, keep_prob: 0.5})
-        saver = tf.train.Saver()
 
         model_name = 'move_from'
         dir_save = dir_location(model_name)
