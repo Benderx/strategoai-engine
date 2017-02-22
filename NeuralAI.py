@@ -48,6 +48,9 @@ class NeuralAI:
         # EVAKL MOVE_FROM()
         result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], keep_prob_place: 1.0}, session = self.sess)[0])
 
+        print('move_from', result)
+        input()
+
         result_copy = list(copy.deepcopy(result))
         result_copy.sort(reverse=True)
 
@@ -65,8 +68,6 @@ class NeuralAI:
             total = (f[0]-1) + (f[1]-1)*6
             if total == move_from_net:
                 possible_move_to.append((t[0]-1) + (t[1]-1)*6)
-
-        # print(self.engine.board[move])
 
         # PULLING MOVE_TO TENSORS
 
@@ -88,6 +89,9 @@ class NeuralAI:
 
         # EVAL MOVE_TO()
         result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], move_from_place: [self.one_hot(move_from_net)], keep_prob_place: 1.0}, session = self.sess)[0])
+
+        print('move_to', result)
+        input()
 
         result_copy = copy.deepcopy(result)
         result_copy.sort(reverse=True)

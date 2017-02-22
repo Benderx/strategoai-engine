@@ -283,7 +283,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     data = import_data()
-
     shuffle(data)
 
     # data columns are board, visible, owner, movement, move_from, move_to, board_size, move_from_one_hot, move_to_one_hot
@@ -293,6 +292,9 @@ if __name__ == "__main__":
     move_from_one_hot = data['move_from_one_hot'].tolist()
     move_to = data['move_to'].tolist()
     move_to_one_hot = data['move_to_one_hot'].tolist()
+
+    print('ok')
+    exit()
 
 
 
