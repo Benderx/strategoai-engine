@@ -291,10 +291,6 @@ if __name__ == "__main__":
     move_to = data['move_to'].tolist()
     move_to_one_hot = data['move_to_one_hot'].tolist()
 
-    print('ok')
-    exit()
-
-
 
     if args.model == 'from':
         train_move_from(board, owner, move_from_one_hot, int(args.iterations))
