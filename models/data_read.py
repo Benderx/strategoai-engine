@@ -8,11 +8,9 @@ def import_data():
     return pandas.read_pickle(CSV_LOCATION)
 
 
-def shuffle(df, n=1, axis=0):     
+def shuffle(df):     
     print("Shuffling data")
-    df = df.copy()
-    for _ in range(n):
-        df.apply(np.random.shuffle, axis=axis)
+    df = df.sample(frac=1).reset_index(drop=True)
     print("Done shuffling")
     return df
 
@@ -39,36 +37,32 @@ def print_board(board_to_print):
 
 
 def main():
+    # np.random.seed(seed=4567)
+
     data = import_data()
 
+    # counter = 0
+    # for index, row in data.iterrows():
+    #     if counter > 0:
+    #         break
+    #     print('row num', index)
+    #     print_board(row['board'])
+    #     # print(row['move_data'])
+    #     print(row['move_from'] % 6, int(row['move_from']/6))
+    #     print(row['move_to'] % 6, int(row['move_to']/6))
+    #     counter += 1
+
+    sdata = shuffle(data)
+
     counter = 0
-    for index, row in data.iterrows():
-        if counter > 8:
+    for index, row in sdata.iterrows():
+        if counter > 0:
             break
         print('row num', index)
         print_board(row['board'])
-        print(row['move_data'])
+        # print(row['move_data'])
         print(row['move_from'] % 6, int(row['move_from']/6))
         print(row['move_to'] % 6, int(row['move_to']/6))
         counter += 1
-
-    # sdata = shuffle(data)
-
-    # board = sdata['board'].tolist()
-    # owner = sdata['owner'].tolist()
-    # move_from = sdata['move_from'].tolist()
-    # move_from_one_hot = sdata['move_from_one_hot'].tolist()
-    # move_to = sdata['move_to'].tolist()
-    # move_to_one_hot = sdata['move_to_one_hot'].tolist()
-
-    # counter = 0
-    # for index, row in sdata.iterrows():
-    #     if counter > 8:
-    #         break
-    #     print('row num', index)
-    #     print(row['board'])
-    #     print(row['move_from'])
-    #     print(row['move_to'])
-    #     counter += 1
 
 main()

@@ -13,11 +13,9 @@ TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 5000
 
 
-def shuffle(df, n=1, axis=0):     
+def shuffle(df):     
     print("Shuffling data")
-    df = df.copy()
-    for _ in range(n):
-        df.apply(np.random.shuffle, axis=axis)
+    df = df.sample(frac=1).reset_index(drop=True)
     print("Done shuffling")
     return df
 
