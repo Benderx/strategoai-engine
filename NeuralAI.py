@@ -49,7 +49,7 @@ class NeuralAI:
         result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], keep_prob_place: 1.0}, session = self.sess)[0])
 
         print('move_from', result)
-        input()
+        # input()
 
         result_copy = list(copy.deepcopy(result))
         result_copy.sort(reverse=True)
@@ -91,7 +91,7 @@ class NeuralAI:
         result = list(y_conv.eval(feed_dict={board_place: [self.engine.board], owner_place: [self.engine.owner], move_from_place: [self.one_hot(move_from_net)], keep_prob_place: 1.0}, session = self.sess)[0])
 
         print('move_to', result)
-        input()
+        # input()
 
         result_copy = copy.deepcopy(result)
         result_copy.sort(reverse=True)
