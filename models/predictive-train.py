@@ -119,7 +119,7 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
         print('TRAIN_BATCH_SIZE:', TRAIN_BATCH_SIZE)
         print('test samples avaliable:', test_samples)
         print('TEST_BATCH_SIZE:', TEST_BATCH_SIZE)
-
+        BRENT_start = time.time()
         train_loc = 0
         test_loc = train_samples
         for i in range(iterations):
@@ -148,6 +148,8 @@ def train_move_from(board, owner, move_from_one_hot, iterations):
             train_step.run(feed_dict={board_t: batch_board, owner_t: batch_owner, move_from_one_hot_t: batch_move_from_one_hot, keep_prob: 0.5})
 
         print('Finished training, saving model.')
+        BRENT_end = time.time()
+        print("TIME TAKEN", BRENT_end - BRENT_start)
 
         model_name = 'move_from'
         dir_save = dir_location(model_name)

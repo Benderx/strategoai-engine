@@ -36,33 +36,48 @@ def print_board(board_to_print):
     print()
 
 
+def analyze_chunk(arr, n_percent):
+    num_moves = int(n_percent*len(arr))
+    print('Analyzing top', n_percent, '% of moves.')
+    print(num_moves, '/', len(game_data))
+    upper_n = arr[-int(n_percent*len(arr)):]
+    print(len(upper_n))
+
+    tot = 0
+    for x in upper_n:
+        tot += x[1]
+
+    print('Avg samples for top', n_percent, '% of moves')
+
+
 def main():
     # np.random.seed(seed=4567)
 
     data = import_data()
 
-    # counter = 0
-    # for index, row in data.iterrows():
-    #     if counter > 0:
-    #         break
-    #     print('row num', index)
-    #     print_board(row['board'])
-    #     # print(row['move_data'])
-    #     print(row['move_from'] % 6, int(row['move_from']/6))
-    #     print(row['move_to'] % 6, int(row['move_to']/6))
-    #     counter += 1
 
     sdata = shuffle(data)
 
     counter = 0
+    game_data = []
     for index, row in sdata.iterrows():
-        if counter > 0:
+        if counter >= 10000:
             break
-        print('row num', index)
-        print_board(row['board'])
-        # print(row['move_data'])
-        print(row['move_from'] % 6, int(row['move_from']/6))
-        print(row['move_to'] % 6, int(row['move_to']/6))
+        # print('row num', index)
+        # print_board(row['board'])
+        # # print(row['move_data'])
+        # print(row['move_from'] % 6, int(row['move_from']/6))
+        # print(row['move_to'] % 6, int(row['move_to']/6))
+        # print('rating', row['move_rating'])
+        # print('samples', row['move_samples'])
+        game_data.append((row['move_rating'], row['samples'], row['board'], row['move_from'], row['move_to']))
         counter += 1
+
+    game_data = sorted(game_data, key=lambda x: x[0])
+    
+    percent_iter = lambda x: (x/1.0)
+    for i in percent_iter:
+        analyze_chunk(game_data, i)
+
 
 main()
